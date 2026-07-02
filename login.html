@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - まねーも</title>
+    <style>
+        :root {
+            --main-color: #4fc3f7; 
+            --bg-gradient: linear-gradient(to bottom, #4fc3f7, #e0f7fa);
+            --text-color: #2c3e50;
+        }
+
+        body {
+            margin: 0; padding: 20px 12px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 24px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 { font-size: 20px; margin-bottom: 24px; font-weight: bold; }
+        h2 { font-size: 15px; margin-top: 0; margin-bottom: 16px; color: #555; }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            box-sizing: border-box;
+            outline: none;
+            background: #f9f9f9;
+        }
+        input:focus, select:focus {
+            border-color: var(--main-color);
+            background: #fff;
+        }
+
+        /* 2連プルダウン用 */
+        .select-row {
+            display: flex;
+            gap: 8px;
+        }
+        .select-row select {
+            flex: 1;
+        }
+
+        /* 12色カラーボタン用 */
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .color-circle {
+            width: 60%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .color-circle:active {
+            transform: scale(0.9);
+        }
+        /* えらばれている色の目印 */
+        .color-circle.selected {
+            border-color: #2c3e50;
+            transform: scale(1.05);
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+
+        .hint-text {
+            font-size: 11px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            color: white;
+            background-color: var(--main-color);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+        }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--main-color);
+            border: 1px solid var(--main-color);
+            box-shadow: none;
+            margin-top: 12px;
+        }
+
+        .toggle-link {
+            font-size: 13px;
+            color: var(--main-color);
+            text-decoration: underline;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 16px;
+        }
+
+        /* 画面の切り替え用 */
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container" id="loginBox">
+        <h1>まねーも</h1>
+        
+        <div class="input-group">
+            <label for="loginName">ニックネーム</label>
+            <input type="text" id="loginName" placeholder="とうろくしたなまえ">
+        </div>
+
+        <div class="input-group">
+            <label for="loginPassword">あいことば（ひらがな）</label>
+            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね">
+        </div>
+
+        <button class="btn" onclick="login()">ログインする 🔑</button>
+        
+        <div>
+            <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しくとうろく）</span>
+        </div>
+        <div>
+            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわすれたとき</span>
+        </div>
+    </div>
+
+
+    <div class="login-container hidden" id="registerBox">
+        <h1>新しくあいことばをきめる</h1>
+        
+        <div class="input-group">
+            <label for="regName">ニックネーム</label>
+            <input type="text" id="regName" placeholder="あなたのなまえ">
+        </div>
+
+        <div class="input-group">
+            <label for="regPassword">あいことば（ひらがなのみ10文字以内）</label>
+            <input type="text" id="regPassword" placeholder="例：ひみつのパス" oninput="validateHiragana(this)">
+            <div class="hint-text">※ひらがなだけで10文字までだよ</div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
+        <h2>わすれたときのためのしつもん</h2>
+
+        <div class="input-group">
+            <label>たんじょうびは？</label>
+            <div class="select-row">
+                <select id="regMonth"></select>
+                <select id="regDay"></select>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>好きな色は？</label>
+            <div class="color-picker-grid" id="regColorGrid"></div>
+        </div>
+
+        <button class="btn" onclick="register()">これでとうろくする ✨</button>
+        <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
+    </div>
+
+
+    <div class="login-container hidden" id="forgotBox">
+        <h1>あいことばの確認</h1>
+        <p style="font-size: 13px; color: #555;">とうろくしたニックネームと、しつもんにこたえてね</p>
+        
+        <div class="input-group">
+            <label for="forgotName">ニックネーム</label>
+            <input type="text" id="forgotName" placeholder="あなたのなまえ">
+        </div>
+
+        <div class="input-group">
+            <label> 今のペットのなまえは？</label>
+            <input type="text" id="forgotPet" placeholder="こたえ">
+        </div>
+
+        <div class="input-group">
+            <label>たんじょうびは？</label>
+            <div class="select-row">
+                <select id="forgotMonth"></select>
+                <select id="forgotDay"></select>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>すきないろは？</label>
+            <div class="color-picker-grid" id="forgotColorGrid"></div>
+        </div>
+
+        <button class="btn" onclick="checkAnswers()">あいことばをチェックする 🔍</button>
+        <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        // 1. Firebaseの設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
+            authDomain: "moneymo-3c572.firebaseapp.com",
+            databaseURL: "https://moneymo-3c572-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "moneymo-3c572",
+            storageBucket: "moneymo-3c572.firebasestorage.app",
+            messagingSenderId: "1040579264053",
+            appId: "1:1040579264053:web:d3de60f3e7438c44aa3b7c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 12色のカラーパレット定義
+        const colorPalette = [
+            { name: "aka", hex: "#ef5350" },    
+            { name: "pinku", hex: "#f48fb1" },  
+            { name: "daidai", hex: "#ffb74d" }, 
+            { name: "kiiro", hex: "#fff176" },  
+            { name: "midori", hex: "#81c784" }, 
+            { name: "mizu", hex: "#4fc3f7" },   
+            { name: "ao", hex: "#64b5f6" },     
+            { name: "murasaki", hex: "#ba68c8" },
+            { name: "cha", hex: "#a1887f" },    
+            { name: "siro", hex: "#e0e0e0" },   
+            { name: "hai", hex: "#90a4ae" },    
+            { name: "kuro", hex: "#37474f" }    
+        ];
+
+        let selectedRegisterColor = "";
+        let selectedForgotColor = "";
+
+        function initFormElements() {
+            setupDateDropdowns('regMonth', 'regDay');
+            setupDateDropdowns('forgotMonth', 'forgotDay');
+            createColorGrid('regColorGrid', 'reg');
+            createColorGrid('forgotColorGrid', 'forgot');
+        }
+
+        function setupDateDropdowns(monthId, dayId) {
+            const monthSelect = document.getElementById(monthId);
+            const daySelect = document.getElementById(dayId);
+
+            monthSelect.innerHTML = '<option value="">-- 月 --</option>';
+            for (let m = 1; m <= 12; m++) {
+                monthSelect.innerHTML += `<option value="${m}">${m}月</option>`;
+            }
+
+            daySelect.innerHTML = '<option value="">-- 日 --</option>';
+            for (let d = 1; d <= 31; d++) {
+                daySelect.innerHTML += `<option value="${d}">${d}日</option>`;
+            }
+        }
+
+        function createColorGrid(gridId, mode) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = "";
+            colorPalette.forEach(color => {
+                const circle = document.createElement('div');
+                circle.className = 'color-circle';
+                circle.style.backgroundColor = color.hex;
+                circle.title = color.name;
+                circle.onclick = () => selectColor(circle, color.name, mode);
+                grid.appendChild(circle);
+            });
+        }
+
+        function selectColor(element, colorName, mode) {
+            const grid = element.parentElement;
+            grid.querySelectorAll('.color-circle').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+
+            if (mode === 'reg') {
+                selectedRegisterColor = colorName;
+            } else {
+                selectedForgotColor = colorName;
+            }
+        }
+
+        function showBox(boxId) {
+            document.getElementById('loginBox').classList.add('hidden');
+            document.getElementById('registerBox').classList.add('hidden');
+            document.getElementById('forgotBox').classList.add('hidden');
+            document.getElementById(boxId).classList.remove('hidden');
+        }
+
+        function validateHiragana(input) {
+            let value = input.value.replace(/[^ぁ-ん]/g, '');
+            if (value.length > 10) { value = value.substring(0, 10); }
+            input.value = value;
+        }
+
+        // 新規とうろくの処理（ペットの名前の保存を無くしました）
+        function register() {
+            const name = document.getElementById('regName').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const month = document.getElementById('regMonth').value;
+            const day = document.getElementById('regDay').value;
+            const ansColor = selectedRegisterColor;
+
+            if (!name || !password || !month || !day || !ansColor) {
+                alert("ぜんぶ入力（選択）してね！");
+                return;
+            }
+
+            const birthdayStr = `${month}月${day}日`;
+
+            database.ref('users/' + name).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    alert("そのニックネームはすでに使われているよ💦");
+                } else {
+                    database.ref('users/' + name).set({
+                        password: password,
+                        question1: birthdayStr, // しつもん：たんじょうび
+                        question2: ansColor     // しつもん：すきないろ
+                    }).then(() => {
+                        alert("とうろくができたよ！ログインしてみてね✨");
+                        showBox('loginBox');
+                        document.getElementById('loginName').value = name;
+                    });
+                }
+            });
+        }
+
+        function login() {
+            const name = document.getElementById('loginName').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!name || !password) {
+                alert("ニックネームとあいことばをいれてね！");
+                return;
+            }
+
+            database.ref('users/' + name).once('value').then((snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.password === password) {
+                    alert("ログイン大成功！");
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('currentUserName', name);
+                    window.location.href = "index.html";
+                } else {
+                    alert("ニックネームかあいことばがちがうみたい…💦");
+                }
+            });
+        }
+
+        // あいことばを忘れた時の答え合わせ（ペットの名前をクラウドから自動取得！）
+        function checkAnswers() {
+            const name = document.getElementById('forgotName').value.trim();
+            const forgotPet = document.getElementById('forgotPet').value.trim(); // ユーザーが入力したペット名
+            const month = document.getElementById('forgotMonth').value;
+            const day = document.getElementById('forgotDay').value;
+            const forgotColor = selectedForgotColor;
+
+            if (!name || !forgotPet || !month || !day || !forgotColor) {
+                alert("ぜんぶ入力（選択）してね！");
+                return;
+            }
+
+            const birthdayStr = `${month}月${day}日`;
+
+            // まず、入力された名前のユーザーデータがあるか確認
+            database.ref('users/' + name).once('value').then((userSnapshot) => {
+                const userData = userSnapshot.val();
+                if (!userData) {
+                    alert("そのニックネームの人は見つからなかったよ💦");
+                    return;
+                }
+
+                // 次に、リアルタイムデータベースから「現在のペットの名前」を自動取得する！
+                database.ref('pet_data/petName').once('value').then((petSnapshot) => {
+                    const currentCloudPetName = petSnapshot.val() || "もっちー"; // クラウドになければ初期値
+
+                    // 1. ペットの名前 2. たんじょうび 3. 好きな色 がすべて一致するかチェック
+                    if (forgotPet === currentCloudPetName && 
+                        userData.question1 === birthdayStr && 
+                        userData.question2 === forgotColor) {
+                        
+                        alert(`大正解！あなたのあいことばは【 ${userData.password} 】だよ！`);
+                        showBox('loginBox');
+                        document.getElementById('loginPassword').value = userData.password;
+                    } else {
+                        alert("こたえがちがうみたいだよ…もういちど確かめてね💦");
+                    }
+                });
+            });
+        }
+
+        initFormElements();
+    </script>
+</body>
+</html>

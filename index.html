@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>おこづかい帳＆ふしぎペット</title>
+    <title>まねーも</title>
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -434,8 +434,22 @@
 
         function goToPetRoom() { window.location.href = "pet.html"; }
 
+        // --- [追加] ログインチェック機能 ---
+        function checkLoginStatus() {
+            // ログイン成功時に保存した証拠があるか確認
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (isLoggedIn !== 'true') {
+                alert('ログインしてね！🔑');
+                // ログインしていない場合は強制的にログイン画面へ飛ばす
+                window.location.href = "login.html";
+            }
+        }
+        // データを読み込む前に、まずはログインしているかチェック！
+        checkLoginStatus();
+
         // 起動時にクラウドからおこづかい帳のデータを読み込む
         loadLedgerData();
+
 
     </script>
 </body>
