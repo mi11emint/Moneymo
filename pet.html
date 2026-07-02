@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ふしぎペットの部屋</title>
+    <style>
+        :root {
+            --sky-gradient: linear-gradient(to bottom, #4fc3f7, #e0f7fa);
+            --text-color: #2c3e50;
+            --main-color: #4fc3f7; 
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--sky-gradient);
+            height: 100vh;
+            display: flex;
+            flex-direction: column; 
+            justify-content: space-between;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+
+        /* 上部メニューエリア */
+        .top-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+        }
+
+        /* 縦の頭の位置をきれいに揃えるグリッドシステム */
+        .menu-grid-row {
+            display: grid;
+            grid-template-columns: 44px 1fr; /* 左側アイコン幅44px固定、右側コマンド */
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* メニューのボタン基本スタイル */
+        .menu-btn {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.7);
+            color: #2c3e50;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: left; /* 文字を左揃えに */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .menu-btn:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.9); }
+        
+        /* 左側のアイコン単体ボタン（正方形） */
+        .icon-btn-menu {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .back-ledger-btn { background: rgba(47, 54, 64, 0.15); }
+
+        /* 音楽再生中のボタンエフェクト */
+        .music-playing {
+            background: #b2dfdb !important;
+            border-color: #4db6ac !important;
+            animation: pulse 2s infinite;
+        }
+
+        /* なまえ入力エリア（1行にすっきり収める） */
+        .name-inputs-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+        .name-inputs-container div {
+            font-size: 11px;
+            color: #2c3e50;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+        }
+        .name-inputs-container input {
+            width: 100%;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 4px 6px;
+            font-size: 11px;
+            text-align: center;
+            background: rgba(255,255,255,0.8);
+            box-sizing: border-box;
+        }
+
+        /* 中央：ステージエリア */
+        .stage { 
+            flex: 1; 
+            width: 100%;
+            position: relative;
+            touch-action: none; 
+        }
+
+        /* もにょもにょアメーバペットのベース */
+        .ameba-pet {
+            width: 140px; height: 140px; 
+            background: rgba(255, 255, 255, 0.85);
+            border: 3px solid var(--main-color); 
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+            border-radius: 60% 40% 50% 50% / 40% 50% 50% 60%; 
+            
+            position: absolute; 
+            left: calc(50% - 70px);
+            top: calc(50% - 70px);
+            
+            display: flex; justify-content: center; align-items: center;
+            user-select: none;
+            cursor: pointer;
+            z-index: 5;
+            
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            -webkit-touch-callout: none; 
+            
+            transition: top 1.5s ease-in-out, 
+                        left 1.5s ease-in-out, 
+                        transform 0.5s ease, background 0.5s ease;
+        }
+
+        .pet-moving {
+            animation: monyomonyo 4s ease-in-out infinite alternate, floaty 3s ease-in-out infinite alternate;
+        }
+
+        /* おめめ */
+        .pet-face { 
+            font-size: 24px; 
+            color: #4a5568; 
+            user-select: none; 
+            pointer-events: none; 
+            font-weight: normal;
+        }
+
+        .pet-follow-mode {
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes monyomonyo {
+            0% { border-radius: 60% 40% 50% 50% / 40% 50% 50% 60%; }
+            50% { border-radius: 40% 60% 40% 60% / 50% 40% 60% 40%; }
+            100% { border-radius: 50% 50% 60% 40% / 60% 50% 40% 50%; }
+        }
+        @keyframes floaty {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-15px) rotate(3deg); }
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(77, 182, 172, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(77, 182, 172, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(77, 182, 172, 0); }
+        }
+
+        /* 下部：雲エリア */
+        .bottom-cloud-area {
+            position: relative; width: 100%; padding-bottom: 24px;
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .cloud-box {
+            width: 90%; max-width: 500px; background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px; padding: 20px; box-sizing: border-box;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; margin-bottom: 12px;
+        }
+        .cloud-box::before { content: ''; position: absolute; top: -15px; left: 30px; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.95); border-radius: 50%; }
+        
+        .pet-speech { font-size: 14px; line-height: 1.5; color: #2c3e50; min-height: 42px; }
+
+        .input-row { width: 90%; max-width: 500px; display: flex; gap: 8px; }
+        .chat-input { flex: 1; border: none; padding: 12px 16px; border-radius: 20px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; }
+
+        .icon-btn {
+            background: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+
+        #cancelWatchArea { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; cursor: pointer; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="cancelWatchArea" onclick="endWatchMode()"></div>
+
+    <div class="top-menu" id="topMenu">
+        
+        <div class="menu-grid-row">
+            <button class="menu-btn icon-btn-menu back-ledger-btn" onclick="goToLedger()">📓</button>
+            <div class="name-inputs-container">
+                <div>なまえ:<input type="text" id="petNameInput" value="もっちー" oninput="savePetName(this.value)"></div>
+                <div>あなた:<input type="text" id="userNameInput" value="ユーザー" oninput="saveUserName(this.value)"></div>
+            </div>
+        </div>
+
+        <div class="menu-grid-row">
+            <button class="menu-btn icon-btn-menu" onclick="startWatchMode()">☁️</button>
+            <button class="menu-btn" onclick="loadPastShape()">保存したすがたになる</button>
+        </div>
+
+        <div class="menu-grid-row">
+            <button class="menu-btn icon-btn-menu" onclick="resetPet()">⸌⍤⃝⸍</button>
+            <button class="menu-btn" onclick="saveCurrentShape()">このすがたを保存</button>
+        </div>
+
+        <div class="menu-grid-row">
+            <button class="menu-btn icon-btn-menu" id="musicBtn" onclick="toggleHealingMusic()">♪̆̈</button>
+            <button class="menu-btn" onclick="transformPet()">へんしん！</button>
+        </div>
+
+    </div>
+
+    <div class="stage" id="petStage">
+        <div class="ameba-pet pet-moving" id="myPet">
+            <div class="pet-face" id="petFace">•ᴗ•</div>
+        </div>
+    </div>
+
+    <div class="bottom-cloud-area" id="bottomCloudArea">
+        <div class="cloud-box">
+            <div class="pet-speech" id="speechBubble">
+                <span id="initialText"></span>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <input type="text" class="chat-input" id="petInput" placeholder="なにか話しかけてね...">
+            <button class="icon-btn" onclick="sendToPet()">🕊️</button>
+            <button class="icon-btn" id="micBtn" onclick="toggleSpeechRecognition()">🎤</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        // 1. Firebaseの設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
+            authDomain: "moneymo-3c572.firebaseapp.com",
+            databaseURL: "https://moneymo-3c572-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "moneymo-3c572",
+            storageBucket: "moneymo-3c572.firebasestorage.app",
+            messagingSenderId: "1040579264053",
+            appId: "1:1040579264053:web:d3de60f3e7438c44aa3b7c"
+        };
+
+        // 2. Firebaseの初期化
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 3. クラウドから名前データをリアルタイム同期
+        let petName = "もっちー";
+        let userName = "ユーザー";
+
+        database.ref('pet_data').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                petName = data.petName || "もっちー";
+                userName = data.userName || "ユーザー";
+                
+                document.getElementById('petNameInput').value = petName;
+                document.getElementById('userNameInput').value = userName;
+                
+                updateInitialSpeech();
+            }
+        });
+
+        function savePetName(name) { 
+            petName = name || "ペット"; 
+            database.ref('pet_data').update({ petName: petName });
+        }
+        function saveUserName(name) { 
+            userName = name || "ユーザー"; 
+            database.ref('pet_data').update({ userName: userName });
+        }
+
+        function updateInitialSpeech() {
+            document.getElementById('initialText').innerText = `${petName}はどんなすがたにでもなれるふじみせいめいたいだもんも。のんびりながめたり、おおはなししようも。`;
+        }
+        updateInitialSpeech();
+
+        function goToLedger() { window.location.href = "index.html"; }
+
+        // 空の背景連動
+        function updateSkyByTime() {
+            const hour = new Date().getHours();
+            const body = document.body;
+            let gradient = (hour >= 5 && hour < 8) ? "linear-gradient(to bottom, #ffb199, #ffe5d9, #e0f7fa)" :
+                           (hour >= 8 && hour < 16) ? "linear-gradient(to bottom, #4fc3f7, #b3e5fc, #e0f7fa)" :
+                           (hour >= 16 && hour < 19) ? "linear-gradient(to bottom, #f4511e, #ffb300, #ffe082)" :
+                                                      "linear-gradient(to bottom, #0d1b2a, #1b263b, #415a77)";
+            body.style.background = gradient;
+        }
+        updateSkyByTime(); setInterval(updateSkyByTime, 60000);
+
+        // 雑談
+        function sendToPet() {
+            const input = document.getElementById('petInput');
+            if (!input.value.trim()) return;
+            input.value = "";
+            const replies = [
+                `おはなししてくれて、${userName}んも、うれしいも！`,
+                `${userName}んもとおはなしすると、${petName}はおちつくんもんも。`,
+                `今日はどんな一日だったんも？`
+            ];
+            document.getElementById('speechBubble').innerText = replies[Math.floor(Math.random() * replies.length)];
+        }
+
+        // マイク入力
+        let recognition;
+        function toggleSpeechRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!window.SpeechRecognition) { alert("マイクに対応してないも…"); return; }
+            if (!recognition) {
+                recognition = new SpeechRecognition(); recognition.lang = 'ja-JP';
+                recognition.onstart = () => { document.getElementById('micBtn').style.background = '#ff8a80'; };
+                recognition.onresult = (event) => { document.getElementById('petInput').value = event.results[0][0].transcript; sendToPet(); };
+                recognition.onend = () => { document.getElementById('micBtn').style.background = 'white'; recognition = null; };
+                recognition.start();
+            }
+        }
+
+        // ながめるモード (☁️ ボタン)
+        function startWatchMode() {
+            document.getElementById('topMenu').style.opacity = '0';
+            document.getElementById('topMenu').style.pointerEvents = 'none';
+            document.getElementById('bottomCloudArea').style.opacity = '0';
+            document.getElementById('bottomCloudArea').style.transform = 'translateY(120px)';
+            document.getElementById('cancelWatchArea').style.display = 'block';
+        }
+        function endWatchMode() {
+            document.getElementById('topMenu').style.opacity = '1';
+            document.getElementById('topMenu').style.pointerEvents = 'auto';
+            document.getElementById('bottomCloudArea').style.opacity = '1';
+            document.getElementById('bottomCloudArea').style.transform = 'translateY(0)';
+            document.getElementById('cancelWatchArea').style.display = 'none';
+        }
+
+        // へんしん！
+        let isTransformed = false;
+        function transformPet() {
+            const input = document.getElementById('petInput').value.trim();
+            if (!input) { alert("下の入力欄にことばを入れてから押してね！"); return; }
+            isTransformed = true;
+            document.getElementById('myPet').style.background = "linear-gradient(45deg, #ff80ab, #ffee58)";
+            document.getElementById('petFace').innerText = `${currentFace}✨`; 
+            document.getElementById('speechBubble').innerText = `「${input}」にへんしんしたんも！`;
+        }
+        
+        // ⸌⍤⃝⸍ ボタンで元の姿に戻る
+        function resetPet() {
+            isTransformed = false;
+            document.getElementById('myPet').style.background = "rgba(255, 255, 255, 0.85)";
+            document.getElementById('petFace').innerText = currentFace;
+            document.getElementById('speechBubble').innerText = `${petName}はとのすがたにもどったも。`;
+        }
+        function saveCurrentShape() { alert("アルバムにこの姿を保存したんも！"); }
+        function loadPastShape() { if (confirm("過去のすがたにへんしんするも？")) { document.getElementById('myPet').style.background = "linear-gradient(45deg, #00e676, #00b0ff)"; } }
+
+
+        // --------------------------------------------------
+        // 自動Webオーディオヒーリング音楽システム (♪̆̈)
+        // --------------------------------------------------
+        let audioCtx = null;
+        let isPlayingMusic = false;
+        let musicTimer = null;
+
+        function toggleHealingMusic() {
+            const btn = document.getElementById('musicBtn');
+            if (isPlayingMusic) {
+                isPlayingMusic = false;
+                btn.classList.remove('music-playing');
+                if (musicTimer) clearInterval(musicTimer);
+                document.getElementById('speechBubble').innerText = `音楽をとめたもんも。`;
+            } else {
+                isPlayingMusic = true;
+                btn.classList.add('music-playing');
+                document.getElementById('speechBubble').innerText = `ヒーリング音楽を流すも〜。おちつくもんも……。`;
+                
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+                
+                musicTimer = setInterval(() => {
+                    if (!isPlayingMusic) return;
+                    
+                    const freq = scale[Math.floor(Math.random() * scale.length)];
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.5); 
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.0); 
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 3.0);
+                }, 1200); 
+            }
+        }
+
+
+        // --------------------------------------------------
+        // タッチ＆画面長押し引き寄せシステム
+        // --------------------------------------------------
+        const stage = document.getElementById('petStage');
+        const pet = document.getElementById('myPet');
+        
+        let longPressTimer = null;
+        let isLongPressing = false;
+
+        const faceList = ["•ᴗ•", "´﹃｀", "＞◡＜", "•̀ㅁ•́", "☉.☉", "°⌓°", "՞⸝⸝>⩊<⸝⸝՞"];
+        let currentFace = "•ᴗ•";
+
+        function getCoords(e) {
+            const rect = stage.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        pet.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (isLongPressing) return;
+            
+            const randomFace = faceList[Math.floor(Math.random() * faceList.length)];
+            currentFace = randomFace;
+            document.getElementById('petFace').innerText = isTransformed ? `${randomFace}✨` : randomFace;
+
+            monyoRandomMove();
+        });
+
+        function monyoRandomMove() {
+            const randomLeft = Math.floor(Math.random() * 50) + 20;
+            const randomTop = Math.floor(Math.random() * 40) + 20;
+
+            pet.style.left = `${randomLeft}%`;
+            pet.style.top = `${randomTop}%`;
+
+            const replies = [
+                `もにょ〜ん。のんびり移動するも〜。`,
+                `もにょっ、こっちの空気もきもちいいんも。`,
+                `ふふ、くすぐったいもぉ。`,
+                `${petName}はゆっくりお散歩中だもんも。`
+            ];
+            document.getElementById('speechBubble').innerText = replies[Math.floor(Math.random() * replies.length)];
+        }
+
+        function handleStart(e) {
+            isLongPressing = false;
+            const coords = getCoords(e);
+
+            longPressTimer = setTimeout(() => {
+                isLongPressing = true;
+                pet.classList.add('pet-follow-mode'); 
+                moveToCoords(coords.x, coords.y);
+                document.getElementById('speechBubble').innerText = `もにょもにょ……！呼ばれた気がして、そっちに引っ張られちゃうんも〜！`;
+            }, 300);
+        }
+
+        function handleMove(e) {
+            if (!isLongPressing) return;
+            const coords = getCoords(e);
+            moveToCoords(coords.x, coords.y);
+        }
+
+        function handleEnd() {
+            clearTimeout(longPressTimer);
+            if (isLongPressing) {
+                isLongPressing = false;
+                pet.classList.remove('pet-follow-mode');
+                document.getElementById('speechBubble').innerText = `${userName}んもの手の近く、あったかくて落ち着くんも。`;
+            }
+        }
+
+        function moveToCoords(x, y) {
+            const targetLeft = x - 70;
+            const targetTop = y - 70;
+            pet.style.left = `${targetLeft}px`;
+            pet.style.top = `${targetTop}px`;
+        }
+
+        stage.addEventListener('mousedown', handleStart);
+        stage.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        stage.addEventListener('touchstart', handleStart, { passive: true });
+        stage.addEventListener('touchmove', handleMove, { passive: true });
+        window.addEventListener('touchend', handleEnd);
+    </script>
+</body>
+</html>

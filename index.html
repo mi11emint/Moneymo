@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>おこづかい帳＆ふしぎペット</title>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    
+    
+    <style>
+        /* 全体のデザイン設定 */
+        :root {
+            --main-color: #4fc3f7; 
+            --bg-color: #f4f6f9;   
+            --text-color: #2c3e50; 
+            --table-bg: rgba(255, 255, 255, 0.85); 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px; 
+            border: 2px solid var(--main-color); 
+            border-radius: 16px;
+            padding: 16px;
+            box-sizing: border-box;
+            background-color: var(--table-bg); 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(8px);
+        }
+
+        /* ヘッダーエリア */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 { margin: 0; font-size: 20px; font-weight: 600; }
+
+        .icon-btn {
+            background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; outline: none; transition: transform 0.2s;
+        }
+        .icon-btn:active { transform: scale(0.85); }
+        .pet-btn { font-size: 22px; }
+
+        /* ⚙️設定エリア */
+        .control-panel {
+            display: none; 
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            color: #333333;
+        }
+
+        .control-title { font-weight: bold; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .control-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+        .bg-options { display: flex; gap: 8px; align-items: center; }
+        .circle-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #ccc; cursor: pointer; }
+        .btn-white { background-color: #ffffff; }
+        .btn-black { background-color: #121214; }
+        .btn-camera { background-color: #eceff1; display: flex; justify-content: center; align-items: center; font-size: 11px; position: relative; }
+        .btn-camera input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+        /* エクセル風テーブル（縦画面最適化） */
+        .ledger-wrapper {
+            background-color: transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .ledger-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; 
+        }
+
+        .ledger-table th {
+            background-color: var(--main-color);
+            color: white;
+            padding: 10px 4px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--main-color);
+        }
+
+        .ledger-table td {
+            border: 1px solid var(--main-color);
+            opacity: 0.9;
+            padding: 0;
+            vertical-align: middle;
+        }
+
+        /* 文字を自動折り返しにするためのテキストエリア設定 */
+        .cell-textarea {
+            width: 100%;
+            min-height: 40px;
+            border: none;
+            padding: 8px 4px;
+            box-sizing: border-box;
+            font-size: 13px;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            text-align: center;
+            resize: none; 
+            display: block;
+            overflow: hidden; 
+        }
+        .cell-textarea:focus {
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.15); 
+        }
+        tr td:nth-child(2) .cell-textarea { text-align: left; padding-left: 6px; }
+
+        /* 行のコントロール */
+        .table-controls { display: flex; gap: 12px; margin-bottom: 20px; }
+        .action-btn {
+            flex: 1; padding: 10px; border: 1px solid var(--main-color);
+            background-color: var(--main-color); color: white; border-radius: 8px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+        }
+        .btn-secondary { background-color: transparent; color: var(--main-color); }
+
+        /* ★てもちのおかねエリア（無駄を省いたシンプルデザイン） */
+        .money-summary-box {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px dashed var(--main-color);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .money-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .temochi-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-color);
+            border-bottom: 2px double var(--main-color);
+            padding: 0 4px;
+        }
+
+        /* 保護者共有ボタン */
+        .share-btn {
+            background-color: var(--main-color); border: none; color: white; width: 100%;
+            padding: 14px; font-size: 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="ledgerContainer">
+        
+        <div class="header-row">
+            <div class="header-left">
+                <button class="icon-btn" onclick="alert('過去のおこづかい帳のきろく（Firebase）を表示します')">📓</button>
+                <h1>おこづかいちょう</h1>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn pet-btn" onclick="goToPetRoom()">⸌⍤⃝⸍</button>
+                <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
+            </div>
+        </div>
+
+        <div class="control-panel" id="controlPanel">
+            <div class="control-title">⚙️ デザイン設定</div>
+            <div class="control-row" style="align-items: flex-start;">
+                <label style="margin-top: 4px;">わくいろ</label>
+                <div id="picker"></div>
+            </div>
+            <div class="control-row">
+                <label>うしろ</label>
+                <div class="bg-options">
+                    <button class="circle-btn btn-white" onclick="changeBg('white')" title="しろ"></button>
+                    <button class="circle-btn btn-black" onclick="changeBg('black')" title="くろ"></button>
+                    <button class="circle-btn btn-camera" title="カメラロールからえらぶ">
+                        📷
+                        <input type="file" accept="image/*" onchange="loadBackgroundImage(this)">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="ledger-wrapper">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th style="width: 18%;">ひにち</th>
+                        <th style="width: 44%;">ことがら</th>
+                        <th style="width: 19%;">はいった</th>
+                        <th style="width: 19%;">つかった</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerBody">
+                    <tr>
+                        <td><textarea class="cell-textarea" rows="1" placeholder="7/2" oninput="autoResize(this)"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" placeholder="おてつだい、おやつ など" oninput="autoResize(this)"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" placeholder="0" oninput="autoResize(this); calculateTotal()"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" placeholder="0" oninput="autoResize(this); calculateTotal()"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()"></textarea></td>
+                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()"></textarea></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-controls">
+            <button class="action-btn btn-secondary" onclick="deleteRow()">行をけす</button>
+            <button class="action-btn" onclick="addRow()">行をたす</button>
+        </div>
+
+        <div class="money-summary-box">
+            <div class="money-label"> てもちのおかね</div>
+            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
+        </div>
+
+        <button class="share-btn" id="shareBtn" onclick="shareAsImage()">ほごしゃに共有 ✉️</button>
+    </div>
+
+          <!-- Firebaseの道具を読み込む -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        // 1. あなたのFirebase設定（確定版）
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
+            authDomain: "moneymo-3c572.firebaseapp.com",
+            databaseURL: "https://moneymo-3c572-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "moneymo-3c572",
+            storageBucket: "moneymo-3c572.firebasestorage.app",
+            messagingSenderId: "1040579264053",
+            appId: "1:1040579264053:web:d3de60f3e7438c44aa3b7c"
+        };
+
+        // 2. Firebaseの初期化
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // --- 文字の長さに応じて、マスの高さを自動で広げる関数 ---
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // --- ★ 自動計算システム ---
+        function calculateTotal() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            // テーブル内の「はいった」と「つかった」の数値をすべて集計
+            const rows = document.getElementById('ledgerBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const textareas = rows[i].getElementsByTagName('textarea');
+                if (textareas.length >= 4) {
+                    const income = parseFloat(textareas[2].value) || 0;
+                    const expense = parseFloat(textareas[3].value) || 0;
+                    totalIncome += income;
+                    totalExpense += expense;
+                }
+            }
+
+            // 計算： てもちのおかね ＝ はいった合計 － つかった合計
+            const finalTotal = totalIncome - totalExpense;
+
+            // 画面に3桁カンマ付きで表示
+            document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
+        }
+
+        // --- iro.js カラーピッカー ---
+        const colorPicker = new iro.ColorPicker("#picker", {
+            width: 100, color: "#4fc3f7", display: "block",
+            layout: [ { component: iro.ui.Box }, { component: iro.ui.Slider, options: { sliderType: 'hue' } } ]
+        });
+        colorPicker.on('color:change', function(color) {
+            document.documentElement.style.setProperty('--main-color', color.hexString);
+        });
+
+        function toggleSettings() {
+            const panel = document.getElementById('controlPanel');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function changeBg(type) {
+            document.body.style.backgroundImage = "none";
+            if (type === 'white') {
+                document.body.style.backgroundColor = '#f4f6f9';
+                document.documentElement.style.setProperty('--text-color', '#2c3e50');
+                document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.85)');
+            } else if (type === 'black') {
+                document.body.style.backgroundColor = '#121214';
+                document.documentElement.style.setProperty('--text-color', '#ffffff');
+                document.documentElement.style.setProperty('--table-bg', 'rgba(30, 30, 36, 0.75)');
+            }
+        }
+
+        function loadBackgroundImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.body.style.backgroundImage = `url('${e.target.result}')`;
+                    document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.65)');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addRow() {
+            const tbody = document.getElementById('ledgerBody');
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0"></textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0"></textarea></td>
+            `;
+        }
+        function deleteRow() {
+            const tbody = document.getElementById('ledgerBody');
+            if (tbody.rows.length > 0) {
+                tbody.deleteRow(tbody.rows.length - 1);
+                calculateTotal(); 
+            }
+        }
+
+        function shareAsImage() {
+            document.getElementById('controlPanel').style.display = 'none';
+            const target = document.getElementById('ledgerContainer');
+            html2canvas(target, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '今月のおこづかい帳.png';
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                alert('おこづかい帳を保存しました！');
+            });
+        }
+
+        function goToPetRoom() { window.location.href = "pet.html"; }
+
+        // 起動時チェック
+        calculateTotal();
+    </script>
+</body>
+</html>
