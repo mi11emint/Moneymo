@@ -144,7 +144,6 @@
 </head>
 <body>
 
-    <!-- 【A】ログイン画面 -->
     <div class="login-container" id="loginBox">
         <h1>まねーも</h1>
         
@@ -155,7 +154,7 @@
 
         <div class="input-group">
             <label for="loginPassword">あいことば（ひらがな）</label>
-            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね">
+            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね" oninput="validateHiragana(this)">
         </div>
 
         <button class="btn" onclick="login()">ログインする 🔑</button>
@@ -169,7 +168,6 @@
     </div>
 
 
-    <!-- 【B】新規登録画面 -->
     <div class="login-container hidden" id="registerBox">
         <h1>新しくあいことばをきめる</h1>
         
@@ -205,7 +203,6 @@
     </div>
 
 
-    <!-- 【C】合言葉を思い出す画面（ペットの質問を削除） -->
     <div class="login-container hidden" id="forgotBox">
         <h1>あいことばの確認</h1>
         <p style="font-size: 13px; color: #555;">登録したニックネームと、質問にこたえてね</p>
@@ -253,9 +250,8 @@
             return encodeURIComponent(name) + "@moneymo.internal";
         }
 
-        // ひらがなパスワードをFirebaseが絶対文句を言えない英数字記号に変換する関数
+        // ひらがなパスワードを最強英数字記号に変換
         function convertToStrongPassword(hiraganaPassword) {
-            // 文字をエンコードして英数字にし、さらに大文字・数字・記号を強制付与して最強化
             return btoa(encodeURIComponent(hiraganaPassword)).replace(/[^a-zA-Z0-9]/g, "") + "X9!";
         }
 
@@ -322,7 +318,7 @@
 
         // 濁音・半濁音（が・ぱ等）もすべて入力できるように正規表現を修正
         function validateHiragana(input) {
-            let value = input.value.replace(/[^ぁ-ん゛゜ー]/g, '');
+            let value = input.value.replace(/[^ぁ-ん\u3099\u309A゛゜ー]/g, '');
             if (value.length > 10) { value = value.substring(0, 10); }
             input.value = value;
         }
@@ -341,7 +337,6 @@
             }
 
             const pseudoEmail = convertToEmail(name);
-            // 裏側でFirebase専用の最強パスワードに化けさせる
             const strongPassword = convertToStrongPassword(password);
             const birthdayStr = `${month}月${day}日`;
 
@@ -359,6 +354,7 @@
                         alert("登録ができたよ！ログインしてみてね✨");
                         showBox('loginBox');
                         document.getElementById('loginName').value = name;
+                        document.getElementById('loginPassword').value = password;
                     });
                 })
                 .catch((error) => {
@@ -381,7 +377,7 @@
             }
 
             const pseudoEmail = convertToEmail(name);
-            const strongPassword = convertToStrongPassword(password); // ログイン時も同じ法則で最強パスワード化
+            const strongPassword = convertToStrongPassword(password);
 
             auth.signInWithEmailAndPassword(pseudoEmail, strongPassword)
                 .then((userCredential) => {
@@ -394,7 +390,7 @@
                 });
         }
 
-        // あいことばを忘れたとき（ペットの条件を完全撤廃）
+        // あいことばを忘れたとき
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
             const month = document.getElementById('forgotMonth').value;
@@ -423,7 +419,6 @@
                     return;
                 }
 
-                // 誕生日とカラーだけの2条件でジャッジ！
                 if (foundUserData.question1 === birthdayStr && 
                     foundUserData.question2 === forgotColor) {
                     
