@@ -285,6 +285,8 @@
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
+            // 文字が入力されるたびにクラウドへ自動保存
+            saveLedgerData();
         }
 
         // --- ★ 自動計算システム ---
@@ -311,7 +313,7 @@
             document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
         }
 
-        // --- iro.js カラーピッカー ---
+        // --- iro.js カラーピッカー（ここもしっかり残しています！） ---
         const colorPicker = new iro.ColorPicker("#picker", {
             width: 100, color: "#4fc3f7", display: "block",
             layout: [ { component: iro.ui.Box }, { component: iro.ui.Slider, options: { sliderType: 'hue' } } ]
@@ -350,22 +352,72 @@
             }
         }
 
-        function addRow() {
+        // --- 行の追加（Firebaseから読み込んだ文字を入れられるようにパワーアップ） ---
+        function addRow(date = "", content = "", income = "", expense = "") {
             const tbody = document.getElementById('ledgerBody');
             const row = tbody.insertRow();
             row.innerHTML = `
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0"></textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0"></textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${date}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${content}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${income}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${expense}</textarea></td>
             `;
+            // 高さを自動調整
+            row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
         }
+
+        // --- 行の削除 ---
         function deleteRow() {
             const tbody = document.getElementById('ledgerBody');
             if (tbody.rows.length > 0) {
                 tbody.deleteRow(tbody.rows.length - 1);
                 calculateTotal(); 
+                saveLedgerData(); // 削除した状態をクラウドに保存
             }
+        }
+
+        // --- [Firebase] クラウドへデータを保存する関数 ---
+        function saveLedgerData() {
+            const tbody = document.getElementById('ledgerBody');
+            const ledgerRows = [];
+
+            // すべての行の入力内容を集める
+            for (let i = 0; i < tbody.rows.length; i++) {
+                const textareas = tbody.rows[i].querySelectorAll('textarea');
+                if (textareas.length >= 4) {
+                    ledgerRows.push({
+                        date: textareas[0].value,
+                        content: textareas[1].value,
+                        income: textareas[2].value,
+                        expense: textareas[3].value
+                    });
+                }
+            }
+
+            // Firebaseの「ledger_data」という場所にまとめて保存
+            database.ref('ledger_data').set({
+                rows: ledgerRows
+            });
+        }
+
+        // --- [Firebase] クラウドからデータを読み込む関数 ---
+        function loadLedgerData() {
+            database.ref('ledger_data').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                const tbody = document.getElementById('ledgerBody');
+                tbody.innerHTML = ""; // 一度テーブルを空にする
+
+                if (data && data.rows) {
+                    // クラウドにデータがあれば、その内容でテーブルを復活させる
+                    data.rows.forEach(item => {
+                        addRow(item.date, item.content, item.income, item.expense);
+                    });
+                } else {
+                    // クラウドにまだデータがなければ、最初の1行を用意する
+                    addRow();
+                }
+                calculateTotal();
+            });
         }
 
         function shareAsImage() {
@@ -382,8 +434,9 @@
 
         function goToPetRoom() { window.location.href = "pet.html"; }
 
-        // 起動時チェック
-        calculateTotal();
+        // 起動時にクラウドからおこづかい帳のデータを読み込む
+        loadLedgerData();
+
     </script>
 </body>
 </html>
