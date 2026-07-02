@@ -82,7 +82,6 @@
             gap: 8px;
             margin-top: 6px;
         }
-        /* ご指定通り、40%小さくしたカラーボタン（60%サイズ） */
         .color-circle {
             width: 60%;
             margin: 0 auto;
@@ -145,6 +144,7 @@
 </head>
 <body>
 
+    <!-- 【A】ログイン画面 -->
     <div class="login-container" id="loginBox">
         <h1>まねーも</h1>
         
@@ -169,6 +169,7 @@
     </div>
 
 
+    <!-- 【B】新規登録画面 -->
     <div class="login-container hidden" id="registerBox">
         <h1>新しくあいことばをきめる</h1>
         
@@ -179,8 +180,8 @@
 
         <div class="input-group">
             <label for="regPassword">あいことば（ひらがなのみ10文字以内）</label>
-            <input type="text" id="regPassword" placeholder="例：ひみつのパス" oninput="validateHiragana(this)">
-            <div class="hint-text">※ひらがなだけで10文字までだよ</div>
+            <input type="text" id="regPassword" placeholder="例：ひみつのぱす" oninput="validateHiragana(this)">
+            <div class="hint-text">※ひらがなだけで10文字までだよ（濁音もOK！）</div>
         </div>
 
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
@@ -204,6 +205,7 @@
     </div>
 
 
+    <!-- 【C】合言葉を思い出す画面（ペットの質問を削除） -->
     <div class="login-container hidden" id="forgotBox">
         <h1>あいことばの確認</h1>
         <p style="font-size: 13px; color: #555;">登録したニックネームと、質問にこたえてね</p>
@@ -214,12 +216,7 @@
         </div>
 
         <div class="input-group">
-            <label>① 今のペットのなまえは？</label>
-            <input type="text" id="forgotPet" placeholder="こたえ">
-        </div>
-
-        <div class="input-group">
-            <label>② 誕生日は？</label>
+            <label>① 誕生日は？</label>
             <div class="select-row">
                 <select id="forgotMonth"></select>
                 <select id="forgotDay"></select>
@@ -227,7 +224,7 @@
         </div>
 
         <div class="input-group">
-            <label>③ 好きな色は？</label>
+            <label>② 好きな色は？</label>
             <div class="color-picker-grid" id="forgotColorGrid"></div>
         </div>
 
@@ -251,10 +248,15 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // ニックネームを擬似メールアドレスに変換する便利な関数
+        // ニックネームを擬似メールアドレスに変換
         function convertToEmail(name) {
-            // 例: 「たろう」を入力されたら「たろう@moneymo.internal」にする
             return encodeURIComponent(name) + "@moneymo.internal";
+        }
+
+        // ひらがなパスワードをFirebaseが絶対文句を言えない英数字記号に変換する関数
+        function convertToStrongPassword(hiraganaPassword) {
+            // 文字をエンコードして英数字にし、さらに大文字・数字・記号を強制付与して最強化
+            return btoa(encodeURIComponent(hiraganaPassword)).replace(/[^a-zA-Z0-9]/g, "") + "X9!";
         }
 
         const colorPalette = [
@@ -291,7 +293,6 @@
             for (let d = 1; d <= 31; d++) { daySelect.innerHTML += `<option value="${d}">${d}日</option>`; }
         }
 
-        // ◯のサイズを調整したカラーグリッド作成
         function createColorGrid(gridId, mode) {
             const grid = document.getElementById(gridId);
             grid.innerHTML = "";
@@ -319,13 +320,14 @@
             document.getElementById(boxId).classList.remove('hidden');
         }
 
+        // 濁音・半濁音（が・ぱ等）もすべて入力できるように正規表現を修正
         function validateHiragana(input) {
-            let value = input.value.replace(/[^ぁ-ん]/g, '');
+            let value = input.value.replace(/[^ぁ-ん゛゜ー]/g, '');
             if (value.length > 10) { value = value.substring(0, 10); }
             input.value = value;
         }
 
-        // 【作戦①・本番用】新規登録
+        // 新規登録
         function register() {
             const name = document.getElementById('regName').value.trim();
             const password = document.getElementById('regPassword').value.trim();
@@ -338,16 +340,15 @@
                 return;
             }
 
-            // ニックネームを擬似メールアドレスに自動変換
             const pseudoEmail = convertToEmail(name);
+            // 裏側でFirebase専用の最強パスワードに化けさせる
+            const strongPassword = convertToStrongPassword(password);
             const birthdayStr = `${month}月${day}日`;
 
-            // Firebase Authenticationの本番登録システムを使用
-            auth.createUserWithEmailAndPassword(pseudoEmail, password)
+            auth.createUserWithEmailAndPassword(pseudoEmail, strongPassword)
                 .then((userCredential) => {
                     const userId = userCredential.user.uid;
                     
-                    // 秘密の質問の答えをRealtime Databaseに安全に保存
                     database.ref('users/' + userId).set({
                         nickname: name,
                         pseudoEmail: pseudoEmail,
@@ -364,12 +365,12 @@
                     if (error.code === "auth/email-already-in-use") {
                         alert("そのニックネームはすでに使われているよ💦");
                     } else {
-                        alert("エラーが起きたよ💦: " + error.message);
+                        alert("エラーが起きたよ💦\n理由: " + error.message);
                     }
                 });
         }
 
-        // 【作戦①・本番用】ログイン
+        // ログイン
         function login() {
             const name = document.getElementById('loginName').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -380,9 +381,9 @@
             }
 
             const pseudoEmail = convertToEmail(name);
+            const strongPassword = convertToStrongPassword(password); // ログイン時も同じ法則で最強パスワード化
 
-            // Firebase Authenticationで本番用ログイン
-            auth.signInWithEmailAndPassword(pseudoEmail, password)
+            auth.signInWithEmailAndPassword(pseudoEmail, strongPassword)
                 .then((userCredential) => {
                     alert("ログイン大成功！");
                     sessionStorage.setItem('isLoggedIn', 'true');
@@ -393,15 +394,14 @@
                 });
         }
 
-        // 【作戦①・本番用】あいことばを忘れたとき
+        // あいことばを忘れたとき（ペットの条件を完全撤廃）
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
-            const forgotPet = document.getElementById('forgotPet').value.trim();
             const month = document.getElementById('forgotMonth').value;
             const day = document.getElementById('forgotDay').value;
             const forgotColor = selectedForgotColor;
 
-            if (!name || !forgotPet || !month || !day || !forgotColor) {
+            if (!name || !month || !day || !forgotColor) {
                 alert("ぜんぶ入力（選択）してね！");
                 return;
             }
@@ -409,7 +409,6 @@
             const pseudoEmail = convertToEmail(name);
             const birthdayStr = `${month}月${day}日`;
 
-            // データベースから、該当する擬似メールアドレスを持つユーザーを特定
             database.ref('users').once('value').then((snapshot) => {
                 let foundUserData = null;
                 snapshot.forEach((childSnapshot) => {
@@ -424,21 +423,16 @@
                     return;
                 }
 
-                // ペットの名前をクラウドから自動取得して照合
-                database.ref('pet_data/petName').once('value').then((petSnapshot) => {
-                    const currentCloudPetName = petSnapshot.val() || "もっちー";
-
-                    if (forgotPet === currentCloudPetName && 
-                        foundUserData.question1 === birthdayStr && 
-                        foundUserData.question2 === forgotColor) {
-                        
-                        alert(`大正解！あなたのあいことばは【 ${foundUserData.passwordHint} 】だよ！`);
-                        showBox('loginBox');
-                        document.getElementById('loginPassword').value = foundUserData.passwordHint;
-                    } else {
-                        alert("こたえがちがうみたいだよ…もういちど確かめてね💦");
-                    }
-                });
+                // 誕生日とカラーだけの2条件でジャッジ！
+                if (foundUserData.question1 === birthdayStr && 
+                    foundUserData.question2 === forgotColor) {
+                    
+                    alert(`大正解！あなたのあいことばは【 ${foundUserData.passwordHint} 】だよ！`);
+                    showBox('loginBox');
+                    document.getElementById('loginPassword').value = foundUserData.passwordHint;
+                } else {
+                    alert("こたえがちがうみたいだよ…もういちど確かめてね💦");
+                }
             });
         }
 
