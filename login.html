@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ログイン - まねーも</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --main-color: #4fc3f7; 
@@ -65,7 +68,6 @@
             background: #fff;
         }
 
-        /* 2連プルダウン用 */
         .select-row {
             display: flex;
             gap: 8px;
@@ -74,15 +76,16 @@
             flex: 1;
         }
 
-        /* 12色カラーボタン用 */
         .color-picker-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 8px;
             margin-top: 6px;
         }
+        /* ご指定通り、40%小さくしたカラーボタン（60%サイズ） */
         .color-circle {
             width: 60%;
+            margin: 0 auto;
             aspect-ratio: 1;
             border-radius: 50%;
             border: 2px solid transparent;
@@ -93,7 +96,6 @@
         .color-circle:active {
             transform: scale(0.9);
         }
-        /* えらばれている色の目印 */
         .color-circle.selected {
             border-color: #2c3e50;
             transform: scale(1.05);
@@ -138,7 +140,6 @@
             margin-top: 16px;
         }
 
-        /* 画面の切り替え用 */
         .hidden { display: none; }
     </style>
 </head>
@@ -149,7 +150,7 @@
         
         <div class="input-group">
             <label for="loginName">ニックネーム</label>
-            <input type="text" id="loginName" placeholder="とうろくしたなまえ">
+            <input type="text" id="loginName" placeholder="登録したなまえ">
         </div>
 
         <div class="input-group">
@@ -160,7 +161,7 @@
         <button class="btn" onclick="login()">ログインする 🔑</button>
         
         <div>
-            <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しくとうろく）</span>
+            <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しく登録）</span>
         </div>
         <div>
             <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわすれたとき</span>
@@ -183,10 +184,10 @@
         </div>
 
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
-        <h2>わすれたときのためのしつもん</h2>
+        <h2>わすれたときのための質問</h2>
 
         <div class="input-group">
-            <label>たんじょうびは？</label>
+            <label>① 誕生日は？</label>
             <div class="select-row">
                 <select id="regMonth"></select>
                 <select id="regDay"></select>
@@ -194,18 +195,18 @@
         </div>
 
         <div class="input-group">
-            <label>好きな色は？</label>
+            <label>② 好きな色は？</label>
             <div class="color-picker-grid" id="regColorGrid"></div>
         </div>
 
-        <button class="btn" onclick="register()">これでとうろくする ✨</button>
+        <button class="btn" onclick="register()">これで登録する ✨</button>
         <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
     </div>
 
 
     <div class="login-container hidden" id="forgotBox">
         <h1>あいことばの確認</h1>
-        <p style="font-size: 13px; color: #555;">とうろくしたニックネームと、しつもんにこたえてね</p>
+        <p style="font-size: 13px; color: #555;">登録したニックネームと、質問にこたえてね</p>
         
         <div class="input-group">
             <label for="forgotName">ニックネーム</label>
@@ -213,12 +214,12 @@
         </div>
 
         <div class="input-group">
-            <label> 今のペットのなまえは？</label>
+            <label>① 今のペットのなまえは？</label>
             <input type="text" id="forgotPet" placeholder="こたえ">
         </div>
 
         <div class="input-group">
-            <label>たんじょうびは？</label>
+            <label>② 誕生日は？</label>
             <div class="select-row">
                 <select id="forgotMonth"></select>
                 <select id="forgotDay"></select>
@@ -226,19 +227,16 @@
         </div>
 
         <div class="input-group">
-            <label>すきないろは？</label>
+            <label>③ 好きな色は？</label>
             <div class="color-picker-grid" id="forgotColorGrid"></div>
         </div>
 
-        <button class="btn" onclick="checkAnswers()">あいことばをチェックする 🔍</button>
+        <button class="btn" onclick="checkAnswers()">合言葉をチェックする 🔍</button>
         <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
     <script>
-        // 1. Firebaseの設定
+        // Firebaseの設定
         const firebaseConfig = {
             apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
             authDomain: "moneymo-3c572.firebaseapp.com",
@@ -250,9 +248,15 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const database = firebase.database();
 
-        // 12色のカラーパレット定義
+        // ニックネームを擬似メールアドレスに変換する便利な関数
+        function convertToEmail(name) {
+            // 例: 「たろう」を入力されたら「たろう@moneymo.internal」にする
+            return encodeURIComponent(name) + "@moneymo.internal";
+        }
+
         const colorPalette = [
             { name: "aka", hex: "#ef5350" },    
             { name: "pinku", hex: "#f48fb1" },  
@@ -281,18 +285,13 @@
         function setupDateDropdowns(monthId, dayId) {
             const monthSelect = document.getElementById(monthId);
             const daySelect = document.getElementById(dayId);
-
             monthSelect.innerHTML = '<option value="">-- 月 --</option>';
-            for (let m = 1; m <= 12; m++) {
-                monthSelect.innerHTML += `<option value="${m}">${m}月</option>`;
-            }
-
+            for (let m = 1; m <= 12; m++) { monthSelect.innerHTML += `<option value="${m}">${m}月</option>`; }
             daySelect.innerHTML = '<option value="">-- 日 --</option>';
-            for (let d = 1; d <= 31; d++) {
-                daySelect.innerHTML += `<option value="${d}">${d}日</option>`;
-            }
+            for (let d = 1; d <= 31; d++) { daySelect.innerHTML += `<option value="${d}">${d}日</option>`; }
         }
 
+        // ◯のサイズを調整したカラーグリッド作成
         function createColorGrid(gridId, mode) {
             const grid = document.getElementById(gridId);
             grid.innerHTML = "";
@@ -310,12 +309,7 @@
             const grid = element.parentElement;
             grid.querySelectorAll('.color-circle').forEach(c => c.classList.remove('selected'));
             element.classList.add('selected');
-
-            if (mode === 'reg') {
-                selectedRegisterColor = colorName;
-            } else {
-                selectedForgotColor = colorName;
-            }
+            if (mode === 'reg') { selectedRegisterColor = colorName; } else { selectedForgotColor = colorName; }
         }
 
         function showBox(boxId) {
@@ -331,7 +325,7 @@
             input.value = value;
         }
 
-        // 新規とうろくの処理（ペットの名前の保存を無くしました）
+        // 【作戦①・本番用】新規登録
         function register() {
             const name = document.getElementById('regName').value.trim();
             const password = document.getElementById('regPassword').value.trim();
@@ -344,51 +338,65 @@
                 return;
             }
 
+            // ニックネームを擬似メールアドレスに自動変換
+            const pseudoEmail = convertToEmail(name);
             const birthdayStr = `${month}月${day}日`;
 
-            database.ref('users/' + name).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    alert("そのニックネームはすでに使われているよ💦");
-                } else {
-                    database.ref('users/' + name).set({
-                        password: password,
-                        question1: birthdayStr, // しつもん：たんじょうび
-                        question2: ansColor     // しつもん：すきないろ
+            // Firebase Authenticationの本番登録システムを使用
+            auth.createUserWithEmailAndPassword(pseudoEmail, password)
+                .then((userCredential) => {
+                    const userId = userCredential.user.uid;
+                    
+                    // 秘密の質問の答えをRealtime Databaseに安全に保存
+                    database.ref('users/' + userId).set({
+                        nickname: name,
+                        pseudoEmail: pseudoEmail,
+                        passwordHint: password, 
+                        question1: birthdayStr,
+                        question2: ansColor
                     }).then(() => {
-                        alert("とうろくができたよ！ログインしてみてね✨");
+                        alert("登録ができたよ！ログインしてみてね✨");
                         showBox('loginBox');
                         document.getElementById('loginName').value = name;
                     });
-                }
-            });
+                })
+                .catch((error) => {
+                    if (error.code === "auth/email-already-in-use") {
+                        alert("そのニックネームはすでに使われているよ💦");
+                    } else {
+                        alert("エラーが起きたよ💦: " + error.message);
+                    }
+                });
         }
 
+        // 【作戦①・本番用】ログイン
         function login() {
             const name = document.getElementById('loginName').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
 
             if (!name || !password) {
-                alert("ニックネームとあいことばをいれてね！");
+                alert("ニックネームと合言葉をいれてね！");
                 return;
             }
 
-            database.ref('users/' + name).once('value').then((snapshot) => {
-                const userData = snapshot.val();
-                if (userData && userData.password === password) {
+            const pseudoEmail = convertToEmail(name);
+
+            // Firebase Authenticationで本番用ログイン
+            auth.signInWithEmailAndPassword(pseudoEmail, password)
+                .then((userCredential) => {
                     alert("ログイン大成功！");
                     sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('currentUserName', name);
                     window.location.href = "index.html";
-                } else {
-                    alert("ニックネームかあいことばがちがうみたい…💦");
-                }
-            });
+                })
+                .catch((error) => {
+                    alert("ニックネームか合言葉がちがうみたい…💦");
+                });
         }
 
-        // あいことばを忘れた時の答え合わせ（ペットの名前をクラウドから自動取得！）
+        // 【作戦①・本番用】あいことばを忘れたとき
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
-            const forgotPet = document.getElementById('forgotPet').value.trim(); // ユーザーが入力したペット名
+            const forgotPet = document.getElementById('forgotPet').value.trim();
             const month = document.getElementById('forgotMonth').value;
             const day = document.getElementById('forgotDay').value;
             const forgotColor = selectedForgotColor;
@@ -398,28 +406,35 @@
                 return;
             }
 
+            const pseudoEmail = convertToEmail(name);
             const birthdayStr = `${month}月${day}日`;
 
-            // まず、入力された名前のユーザーデータがあるか確認
-            database.ref('users/' + name).once('value').then((userSnapshot) => {
-                const userData = userSnapshot.val();
-                if (!userData) {
+            // データベースから、該当する擬似メールアドレスを持つユーザーを特定
+            database.ref('users').once('value').then((snapshot) => {
+                let foundUserData = null;
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    if (data.pseudoEmail === pseudoEmail) {
+                        foundUserData = data;
+                    }
+                });
+
+                if (!foundUserData) {
                     alert("そのニックネームの人は見つからなかったよ💦");
                     return;
                 }
 
-                // 次に、リアルタイムデータベースから「現在のペットの名前」を自動取得する！
+                // ペットの名前をクラウドから自動取得して照合
                 database.ref('pet_data/petName').once('value').then((petSnapshot) => {
-                    const currentCloudPetName = petSnapshot.val() || "もっちー"; // クラウドになければ初期値
+                    const currentCloudPetName = petSnapshot.val() || "もっちー";
 
-                    // 1. ペットの名前 2. たんじょうび 3. 好きな色 がすべて一致するかチェック
                     if (forgotPet === currentCloudPetName && 
-                        userData.question1 === birthdayStr && 
-                        userData.question2 === forgotColor) {
+                        foundUserData.question1 === birthdayStr && 
+                        foundUserData.question2 === forgotColor) {
                         
-                        alert(`大正解！あなたのあいことばは【 ${userData.password} 】だよ！`);
+                        alert(`大正解！あなたのあいことばは【 ${foundUserData.passwordHint} 】だよ！`);
                         showBox('loginBox');
-                        document.getElementById('loginPassword').value = userData.password;
+                        document.getElementById('loginPassword').value = foundUserData.passwordHint;
                     } else {
                         alert("こたえがちがうみたいだよ…もういちど確かめてね💦");
                     }

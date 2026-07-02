@@ -436,21 +436,17 @@
 
         // --- [追加] ログインチェック機能 ---
         function checkLoginStatus() {
-            // ログイン成功時に保存した証拠があるか確認
             const isLoggedIn = sessionStorage.getItem('isLoggedIn');
             if (isLoggedIn !== 'true') {
                 alert('ログインしてね！🔑');
-                // ログインしていない場合は強制的にログイン画面へ飛ばす
                 window.location.href = "login.html";
             }
         }
-        // データを読み込む前に、まずはログインしているかチェック！
+        // データを読み込む前にログイン状態を確認
         checkLoginStatus();
 
         // 起動時にクラウドからおこづかい帳のデータを読み込む
         loadLedgerData();
-
-
     </script>
 </body>
 </html>
