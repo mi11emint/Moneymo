@@ -154,7 +154,7 @@
 
         <div class="input-group">
             <label for="loginPassword">あいことば（ひらがな）</label>
-            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね" oninput="validateHiragana(this)">
+            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね">
         </div>
 
         <button class="btn" onclick="login()">ログインする 🔑</button>
@@ -178,7 +178,7 @@
 
         <div class="input-group">
             <label for="regPassword">あいことば（ひらがなのみ10文字以内）</label>
-            <input type="text" id="regPassword" placeholder="例：ひみつのぱす" oninput="validateHiragana(this)">
+            <input type="text" id="regPassword" placeholder="例：ひみつのぱす" oninput="limitLength(this, 10)">
             <div class="hint-text">※ひらがなだけで10文字までだよ（濁音もOK！）</div>
         </div>
 
@@ -316,11 +316,18 @@
             document.getElementById(boxId).classList.remove('hidden');
         }
 
-        // 濁音・半濁音（が・ぱ等）もすべて入力できるように正規表現を修正
-        function validateHiragana(input) {
-            let value = input.value.replace(/[^ぁ-ん\u3099\u309A゛゜ー]/g, '');
-            if (value.length > 10) { value = value.substring(0, 10); }
-            input.value = value;
+        // 入力中は文字消去をせず、文字数の制限だけを行う（バグ防止）
+        function limitLength(input, max) {
+            if (input.value.length > max) {
+                input.value = input.value.substring(0, max);
+            }
+        }
+
+        // 登録・ログイン時に「ひらがな（濁音含む）」かどうかを判定する安全な関数
+        function isHiraganaOnly(str) {
+            // ひらがな、濁音・半濁音結合文字、長音符以外が含まれているかチェック
+            const hiraganaRegex = /^[ぁ-ん\u3099\u309A゛゜ー]+$/;
+            return hiraganaRegex.test(str);
         }
 
         // 新規登録
@@ -333,6 +340,12 @@
 
             if (!name || !password || !month || !day || !ansColor) {
                 alert("ぜんぶ入力（選択）してね！");
+                return;
+            }
+
+            // ボタンを押したタイミングで優しくチェック
+            if (!isHiraganaOnly(password)) {
+                alert("あいことばは「ひらがな」だけで入力してね！(濁音や「ー」も使えるよ)");
                 return;
             }
 
