@@ -7,8 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    
-    
     <style>
         /* 全体のデザイン設定 */
         :root {
@@ -52,7 +50,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .header-left, .header-right {
@@ -62,6 +60,9 @@
         }
 
         h1 { margin: 0; font-size: 20px; font-weight: 600; }
+        
+        /* 🏷️ タイトルをシンプルに変更 */
+        .current-month-title { font-size: 16px; color: var(--text-color); font-weight: bold; margin-bottom: 14px; text-align: center; letter-spacing: 1px; }
 
         .icon-btn {
             background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; outline: none; transition: transform 0.2s;
@@ -90,7 +91,7 @@
         .btn-camera { background-color: #eceff1; display: flex; justify-content: center; align-items: center; font-size: 11px; position: relative; }
         .btn-camera input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
-        /* エクセル風テーブル（縦画面最適化） */
+        /* エクセル風テーブル */
         .ledger-wrapper {
             background-color: transparent;
             border-radius: 8px;
@@ -120,7 +121,6 @@
             vertical-align: middle;
         }
 
-        /* 文字を自動折り返しにするためのテキストエリア設定 */
         .cell-textarea {
             width: 100%;
             min-height: 40px;
@@ -142,6 +142,27 @@
         }
         tr td:nth-child(2) .cell-textarea { text-align: left; padding-left: 6px; }
 
+        /* 🗓️ 日付用のプルダウン（セレクトボックス）のスタイル設定 */
+        .cell-select {
+            width: 100%;
+            height: 40px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 13px;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            text-align-last: center; /* 文字を真ん中に寄せる */
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none; /* スマホ固有の矢印をリセット */
+            appearance: none;
+        }
+        .cell-select option {
+            color: #333333; /* プルダウンを開いた時の文字色を見やすく固定 */
+            background-color: #ffffff;
+        }
+
         /* 行のコントロール */
         .table-controls { display: flex; gap: 12px; margin-bottom: 20px; }
         .action-btn {
@@ -151,7 +172,7 @@
         }
         .btn-secondary { background-color: transparent; color: var(--main-color); }
 
-        /* ★てもちのおかねエリア（無駄を省いたシンプルデザイン） */
+        /* てもちのおかねエリア */
         .money-summary-box {
             background: rgba(255, 255, 255, 0.5);
             border: 1px dashed var(--main-color);
@@ -193,7 +214,7 @@
         
         <div class="header-row">
             <div class="header-left">
-                <button class="icon-btn" onclick="alert('過去のおこづかい帳のきろく（Firebase）を表示します')">📓</button>
+                <button class="icon-btn" onclick="goToHistoryPage()">📓</button>
                 <h1>おこづかいちょう</h1>
             </div>
             <div class="header-right">
@@ -201,6 +222,8 @@
                 <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
             </div>
         </div>
+
+        <div class="current-month-title" id="pageMonthTitle">⏰ 読み込み中...</div>
 
         <div class="control-panel" id="controlPanel">
             <div class="control-title">⚙️ デザイン設定</div>
@@ -232,19 +255,7 @@
                     </tr>
                 </thead>
                 <tbody id="ledgerBody">
-                    <tr>
-                        <td><textarea class="cell-textarea" rows="1" placeholder="7/2" oninput="autoResize(this)"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" placeholder="おてつだい、おやつ など" oninput="autoResize(this)"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" placeholder="0" oninput="autoResize(this); calculateTotal()"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" placeholder="0" oninput="autoResize(this); calculateTotal()"></textarea></td>
-                    </tr>
-                    <tr>
-                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()"></textarea></td>
-                        <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()"></textarea></td>
-                    </tr>
-                </tbody>
+                    </tbody>
             </table>
         </div>
 
@@ -261,12 +272,11 @@
         <button class="share-btn" id="shareBtn" onclick="shareAsImage()">ほごしゃに共有 ✉️</button>
     </div>
 
-          <!-- Firebaseの道具を読み込む -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <script>
-        // 1. あなたのFirebase設定（確定版）
         const firebaseConfig = {
             apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
             authDomain: "moneymo-3c572.firebaseapp.com",
@@ -277,49 +287,63 @@
             appId: "1:1040579264053:web:d3de60f3e7438c44aa3b7c"
         };
 
-        // 2. Firebaseの初期化
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const database = firebase.database();
+        let currentUserId = null;
 
-        // --- 文字の長さに応じて、マスの高さを自動で広げる関数 ---
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const monthPath = `${currentYear}-${currentMonth}`;
+
+        function saveDesignSettings(key, value) { localStorage.setItem(key, value); }
+        function loadDesignSettings() {
+            const savedColor = localStorage.getItem('mainColor') || '#4fc3f7';
+            document.documentElement.style.setProperty('--main-color', savedColor);
+            if (colorPicker) colorPicker.color.hexString = savedColor;
+            const savedBgType = localStorage.getItem('bgType') || 'white';
+            const savedBgImage = localStorage.getItem('bgImage');
+            if (savedBgImage) {
+                document.body.style.backgroundImage = `url('${savedBgImage}')`;
+                document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.65)');
+            } else {
+                changeBg(savedBgType, false);
+            }
+        }
+
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
-            // 文字が入力されるたびにクラウドへ自動保存
             saveLedgerData();
         }
 
-        // --- ★ 自動計算システム ---
         function calculateTotal() {
             let totalIncome = 0;
             let totalExpense = 0;
-
-            // テーブル内の「はいった」と「つかった」の数値をすべて集計
             const rows = document.getElementById('ledgerBody').getElementsByTagName('tr');
             for (let i = 0; i < rows.length; i++) {
                 const textareas = rows[i].getElementsByTagName('textarea');
-                if (textareas.length >= 4) {
-                    const income = parseFloat(textareas[2].value) || 0;
-                    const expense = parseFloat(textareas[3].value) || 0;
+                const select = rows[i].getElementsByTagName('select')[0];
+                if (textareas.length >= 3) {
+                    // textareas[0]はことがら、[1]ははいった、[2]はつかった
+                    const income = parseFloat(textareas[1].value) || 0;
+                    const expense = parseFloat(textareas[2].value) || 0;
                     totalIncome += income;
                     totalExpense += expense;
                 }
             }
-
-            // 計算： てもちのおかね ＝ はいった合計 － つかった合計
             const finalTotal = totalIncome - totalExpense;
-
-            // 画面に3桁カンマ付きで表示
             document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
         }
 
-        // --- iro.js カラーピッカー（ここもしっかり残しています！） ---
         const colorPicker = new iro.ColorPicker("#picker", {
             width: 100, color: "#4fc3f7", display: "block",
             layout: [ { component: iro.ui.Box }, { component: iro.ui.Slider, options: { sliderType: 'hue' } } ]
         });
         colorPicker.on('color:change', function(color) {
             document.documentElement.style.setProperty('--main-color', color.hexString);
+            saveDesignSettings('mainColor', color.hexString);
         });
 
         function toggleSettings() {
@@ -327,8 +351,12 @@
             panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
         }
 
-        function changeBg(type) {
+        function changeBg(type, shouldSave = true) {
             document.body.style.backgroundImage = "none";
+            if (shouldSave) {
+                localStorage.removeItem('bgImage');
+                saveDesignSettings('bgType', type);
+            }
             if (type === 'white') {
                 document.body.style.backgroundColor = '#f4f6f9';
                 document.documentElement.style.setProperty('--text-color', '#2c3e50');
@@ -345,78 +373,103 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    document.body.style.backgroundImage = `url('${e.target.result}')`;
+                    const base64Image = e.target.result;
+                    document.body.style.backgroundImage = `url('${base64Image}')`;
                     document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.65)');
+                    saveDesignSettings('bgImage', base64Image);
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        // --- 行の追加（Firebaseから読み込んだ文字を入れられるようにパワーアップ） ---
-        function addRow(date = "", content = "", income = "", expense = "") {
+        // 🛠️ ひにちをプルダウン（1〜31）で生成するようにパワーアップ！
+        function addRow(date = "1", content = "", income = "", expense = "") {
             const tbody = document.getElementById('ledgerBody');
             const row = tbody.insertRow();
+            
+            // 1〜31日までの選択肢を作る
+            let optionsHtml = "";
+            for (let d = 1; d <= 31; d++) {
+                optionsHtml += `<option value="${d}" ${String(date) === String(d) ? 'selected' : ''}>${d}</option>`;
+            }
+
             row.innerHTML = `
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${date}</textarea></td>
+                <td>
+                    <select class="cell-select" onchange="saveLedgerData()">
+                        ${optionsHtml}
+                    </select>
+                </td>
                 <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${content}</textarea></td>
                 <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${income}</textarea></td>
                 <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${expense}</textarea></td>
             `;
-            // 高さを自動調整
             row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
         }
 
-        // --- 行の削除 ---
         function deleteRow() {
             const tbody = document.getElementById('ledgerBody');
             if (tbody.rows.length > 0) {
                 tbody.deleteRow(tbody.rows.length - 1);
                 calculateTotal(); 
-                saveLedgerData(); // 削除した状態をクラウドに保存
+                saveLedgerData();
             }
         }
 
-        // --- [Firebase] クラウドへデータを保存する関数 ---
         function saveLedgerData() {
+            if (!currentUserId) return;
             const tbody = document.getElementById('ledgerBody');
             const ledgerRows = [];
-
-            // すべての行の入力内容を集める
             for (let i = 0; i < tbody.rows.length; i++) {
+                const select = tbody.rows[i].querySelector('select');
                 const textareas = tbody.rows[i].querySelectorAll('textarea');
-                if (textareas.length >= 4) {
+                if (select && textareas.length >= 3) {
                     ledgerRows.push({
-                        date: textareas[0].value,
-                        content: textareas[1].value,
-                        income: textareas[2].value,
-                        expense: textareas[3].value
+                        date: select.value,
+                        content: textareas[0].value,
+                        income: textareas[1].value,
+                        expense: textareas[2].value
                     });
                 }
             }
-
-            // Firebaseの「ledger_data」という場所にまとめて保存
-            database.ref('ledger_data').set({
-                rows: ledgerRows
-            });
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
         }
 
-        // --- [Firebase] クラウドからデータを読み込む関数 ---
         function loadLedgerData() {
-            database.ref('ledger_data').once('value').then((snapshot) => {
+            if (!currentUserId) return;
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
                 const data = snapshot.val();
                 const tbody = document.getElementById('ledgerBody');
-                tbody.innerHTML = ""; // 一度テーブルを空にする
+                tbody.innerHTML = "";
 
                 if (data && data.rows) {
-                    // クラウドにデータがあれば、その内容でテーブルを復活させる
-                    data.rows.forEach(item => {
-                        addRow(item.date, item.content, item.income, item.expense);
-                    });
+                    data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
+                    calculateTotal();
                 } else {
-                    // クラウドにまだデータがなければ、最初の1行を用意する
-                    addRow();
+                    let lastYear = currentYear;
+                    let lastMonth = currentMonth - 1;
+                    if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
+                    const lastMonthPath = `${lastYear}-${lastMonth}`;
+
+                    database.ref(`ledger_data/${currentUserId}/months/${lastMonthPath}`).once('value').then((lastSnapshot) => {
+                        const lastData = lastSnapshot.val();
+                        let carryOverMoney = 0;
+
+                        if (lastData && lastData.rows) {
+                            let totalIncome = 0;
+                            let totalExpense = 0;
+                            lastData.rows.forEach(item => {
+                                totalIncome += parseFloat(item.income) || 0;
+                                totalExpense += parseFloat(item.expense) || 0;
+                            });
+                            carryOverMoney = totalIncome - totalExpense;
+                        }
+
+                        // 初期設定は1日として追加
+                        addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "", "");
+                        calculateTotal();
+                        saveLedgerData();
+                    });
                 }
-                calculateTotal();
             });
         }
 
@@ -425,7 +478,7 @@
             const target = document.getElementById('ledgerContainer');
             html2canvas(target, { backgroundColor: null, scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = '今月のおこづかい帳.png';
+                link.download = `${currentYear}年${currentMonth}月のおこづかい帳.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
                 alert('おこづかい帳を保存しました！');
@@ -433,20 +486,24 @@
         }
 
         function goToPetRoom() { window.location.href = "pet.html"; }
+        function goToHistoryPage() { window.location.href = "history.html"; }
 
-        // --- [追加] ログインチェック機能 ---
-        function checkLoginStatus() {
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
-            if (isLoggedIn !== 'true') {
-                alert('ログインしてね！🔑');
-                window.location.href = "login.html";
-            }
+        function initApp() {
+            loadDesignSettings();
+            // タイトル表示を「✨ 2026年 7月 ✨」のようにシンプルに変更
+            document.getElementById('pageMonthTitle').innerText = `✨ ${currentYear}年 ${currentMonth}月 ✨`;
+            
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    loadLedgerData();
+                } else {
+                    alert('ログインしてね！🔑');
+                    window.location.href = "login.html";
+                }
+            });
         }
-        // データを読み込む前にログイン状態を確認
-        checkLoginStatus();
-
-        // 起動時にクラウドからおこづかい帳のデータを読み込む
-        loadLedgerData();
+        initApp();
     </script>
 </body>
 </html>

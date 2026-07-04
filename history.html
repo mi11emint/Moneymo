@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>かこのおこづかいちょう - まねーも</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --main-color: #4fc3f7; 
+            --bg-color: #f4f6f9;   
+            --text-color: #2c3e50; 
+            --table-bg: rgba(255, 255, 255, 0.85); 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px; 
+            border: 2px solid var(--main-color); 
+            border-radius: 16px;
+            padding: 16px;
+            box-sizing: border-box;
+            background-color: var(--table-bg); 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(8px);
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        h1 { margin: 0; font-size: 18px; font-weight: 600; }
+
+        .back-btn {
+            background: transparent; border: 1px solid var(--main-color); color: var(--main-color);
+            padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+
+        /* 📅 パターンB：月切り替えカレンダーUI */
+        .month-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .month-display {
+            font-size: 16px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+        }
+        .arrow-btn {
+            background: white; border: 1px solid #ccc; border-radius: 50%;
+            width: 34px; height: 34px; cursor: pointer; font-size: 14px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .arrow-btn:active { transform: scale(0.9); }
+
+        .ledger-wrapper {
+            background-color: transparent; border-radius: 8px; overflow: hidden; margin-bottom: 16px;
+        }
+
+        .ledger-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .ledger-table th {
+            background-color: var(--main-color); color: white; padding: 10px 4px; font-size: 13px; font-weight: 500; border: 1px solid var(--main-color);
+        }
+        .ledger-table td { border: 1px solid var(--main-color); opacity: 0.9; padding: 0; vertical-align: middle; }
+
+        .cell-textarea {
+            width: 100%; min-height: 40px; border: none; padding: 8px 4px; box-sizing: border-box;
+            font-size: 13px; background: transparent; color: inherit; font-family: inherit;
+            text-align: center; resize: none; display: block; overflow: hidden; 
+        }
+        .cell-textarea:focus { outline: none; background-color: rgba(255, 255, 255, 0.15); }
+        tr td:nth-child(2) .cell-textarea { text-align: left; padding-left: 6px; }
+
+        .table-controls { display: flex; gap: 12px; margin-bottom: 20px; }
+        .action-btn {
+            flex: 1; padding: 10px; border: 1px solid var(--main-color);
+            background-color: var(--main-color); color: white; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+        }
+        .btn-secondary { background-color: transparent; color: var(--main-color); }
+
+        .money-summary-box {
+            background: rgba(255, 255, 255, 0.5); border: 1px dashed var(--main-color); border-radius: 12px;
+            padding: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .money-label { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: bold; }
+        .temochi-display { font-size: 20px; font-weight: bold; color: var(--text-color); border-bottom: 2px double var(--main-color); padding: 0 4px; }
+
+        .share-btn {
+            background-color: var(--main-color); border: none; color: white; width: 100%;
+            padding: 14px; font-size: 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="ledgerContainer">
+        
+        <div class="header-row">
+            <h1>📓 かこのきろく</h1>
+            <button class="back-btn" onclick="goToMainPage()">もどる ↩</button>
+        </div>
+
+        <div class="month-selector">
+            <button class="arrow-btn" onclick="changeMonth(-1)">◀</button>
+            <div class="month-display" id="currentMonthDisplay">2026年 7月</div>
+            <button class="arrow-btn" onclick="changeMonth(1)">▶</button>
+        </div>
+
+        <div class="ledger-wrapper">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th style="width: 18%;">ひにち</th>
+                        <th style="width: 44%;">ことがら</th>
+                        <th style="width: 19%;">はいった</th>
+                        <th style="width: 19%;">つかった</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="table-controls">
+            <button class="action-btn btn-secondary" onclick="deleteRow()">行をけす</button>
+            <button class="action-btn" onclick="addRow()">行をたす</button>
+        </div>
+
+        <div class="money-summary-box">
+            <div class="money-label">その月の のこり</div>
+            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
+        </div>
+
+        <button class="share-btn" onclick="shareAsImage()">この月を画像でほぞん 📷</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
+            authDomain: "moneymo-3c572.firebaseapp.com",
+            databaseURL: "https://moneymo-3c572-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "moneymo-3c572",
+            storageBucket: "moneymo-3c572.firebasestorage.app",
+            messagingSenderId: "1040579264053",
+            appId: "1:1040579264053:web:d3de60f3e7438c44aa3b7c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        const today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth() + 1;
+        let currentUserId = null;
+
+        // メインページで保存した色と背景を完全に読み込む機能
+        function loadDesignSettings() {
+            const savedColor = localStorage.getItem('mainColor') || '#4fc3f7';
+            document.documentElement.style.setProperty('--main-color', savedColor);
+            
+            const savedBgType = localStorage.getItem('bgType') || 'white';
+            const savedBgImage = localStorage.getItem('bgImage');
+            if (savedBgImage) {
+                document.body.style.backgroundImage = `url('${savedBgImage}')`;
+                document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.65)');
+            } else {
+                if (savedBgType === 'white') {
+                    document.body.style.backgroundColor = '#f4f6f9';
+                    document.documentElement.style.setProperty('--text-color', '#2c3e50');
+                    document.documentElement.style.setProperty('--table-bg', 'rgba(255, 255, 255, 0.85)');
+                } else if (savedBgType === 'black') {
+                    document.body.style.backgroundColor = '#121214';
+                    document.documentElement.style.setProperty('--text-color', '#ffffff');
+                    document.documentElement.style.setProperty('--table-bg', 'rgba(30, 30, 36, 0.75)');
+                }
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            saveLedgerData();
+        }
+
+        function calculateTotal() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            const rows = document.getElementById('ledgerBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const textareas = rows[i].getElementsByTagName('textarea');
+                if (textareas.length >= 4) {
+                    const income = parseFloat(textareas[2].value) || 0;
+                    const expense = parseFloat(textareas[3].value) || 0;
+                    totalIncome += income;
+                    totalExpense += expense;
+                }
+            }
+            const finalTotal = totalIncome - totalExpense;
+            document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
+        }
+
+        function addRow(date = "", content = "", income = "", expense = "") {
+            const tbody = document.getElementById('ledgerBody');
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${date}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${content}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${income}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${expense}</textarea></td>
+            `;
+            row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
+        }
+
+        function deleteRow() {
+            const tbody = document.getElementById('ledgerBody');
+            if (tbody.rows.length > 0) {
+                tbody.deleteRow(tbody.rows.length - 1);
+                calculateTotal(); 
+                saveLedgerData();
+            }
+        }
+
+        function changeMonth(offset) {
+            currentMonth += offset;
+            if (currentMonth > 12) { currentMonth = 1; currentYear += 1; }
+            else if (currentMonth < 1) { currentMonth = 12; currentYear -= 1; }
+            document.getElementById('currentMonthDisplay').innerText = `${currentYear}年 ${currentMonth}月`;
+            loadLedgerData();
+        }
+
+        // 過去の月ごとデータをクラウドの独立した箱に保存
+        function saveLedgerData() {
+            if (!currentUserId) return;
+            const tbody = document.getElementById('ledgerBody');
+            const ledgerRows = [];
+            for (let i = 0; i < tbody.rows.length; i++) {
+                const textareas = tbody.rows[i].querySelectorAll('textarea');
+                if (textareas.length >= 4) {
+                    ledgerRows.push({
+                        date: textareas[0].value,
+                        content: textareas[1].value,
+                        income: textareas[2].value,
+                        expense: textareas[3].value
+                    });
+                }
+            }
+            const monthPath = `${currentYear}-${currentMonth}`;
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
+        }
+
+        function loadLedgerData() {
+            if (!currentUserId) return;
+            const monthPath = `${currentYear}-${currentMonth}`;
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
+                const data = snapshot.val();
+                const tbody = document.getElementById('ledgerBody');
+                tbody.innerHTML = "";
+                if (data && data.rows) {
+                    data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
+                } else {
+                    addRow(`${currentMonth}/1`, "今月の目標など", "", "");
+                }
+                calculateTotal();
+            });
+        }
+
+        function shareAsImage() {
+            const target = document.getElementById('ledgerContainer');
+            html2canvas(target, { backgroundColor: null, scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${currentYear}年${currentMonth}月のおこづかい帳.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                alert('おこづかい帳の画像を保存しました！');
+            });
+        }
+
+        function goToMainPage() { window.location.href = "index.html"; }
+
+        function initApp() {
+            loadDesignSettings();
+            document.getElementById('currentMonthDisplay').innerText = `${currentYear}年 ${currentMonth}月`;
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    loadLedgerData();
+                } else {
+                    alert('ログインしてね！🔑');
+                    window.location.href = "login.html";
+                }
+            });
+        }
+        initApp();
+    </script>
+</body>
+</html>
