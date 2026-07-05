@@ -68,6 +68,28 @@
             background: #fff;
         }
 
+        /* 🔒 パターン認証用のキャンバスエリア */
+        .pattern-holder {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            position: relative;
+        }
+        .pattern-canvas {
+            background: #f0faff;
+            border: 2px dashed #b3e5fc;
+            border-radius: 16px;
+            touch-action: none; /* スマホのスクロールを防止 */
+            cursor: pointer;
+        }
+        .pattern-status {
+            font-size: 12px;
+            font-weight: bold;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+            height: 18px;
+        }
+
         .select-row {
             display: flex;
             gap: 8px;
@@ -92,9 +114,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.2s, border-color 0.2s;
         }
-        .color-circle:active {
-            transform: scale(0.9);
-        }
+        .color-circle:active { transform: scale(0.9); }
         .color-circle.selected {
             border-color: #2c3e50;
             transform: scale(1.05);
@@ -121,7 +141,6 @@
             box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
         }
         .btn:active { transform: scale(0.98); }
-
         .btn-secondary {
             background-color: transparent;
             color: var(--main-color);
@@ -153,8 +172,11 @@
         </div>
 
         <div class="input-group">
-            <label for="loginPassword">あいことば</label>
-            <input type="password" id="loginPassword" placeholder="あいことばをいれてね">
+            <label>ひみつのパターン（点を指でなぞってね）</label>
+            <div class="pattern-status" id="loginStatus">なぞりはじめてね</div>
+            <div class="pattern-holder">
+                <canvas id="loginCanvas" class="pattern-canvas" width="260" height="260"></canvas>
+            </div>
         </div>
 
         <button class="btn" onclick="login()">ログインする 🔑</button>
@@ -163,12 +185,12 @@
             <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しく登録）</span>
         </div>
         <div>
-            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわすれたとき</span>
+            <span class="toggle-link" onclick="showBox('forgotBox')">ひみつのパターンを忘れたとき</span>
         </div>
     </div>
 
     <div class="login-container hidden" id="registerBox">
-        <h1>新しくあいことばをきめる</h1>
+        <h1>新しくパターンをきめる</h1>
         
         <div class="input-group">
             <label for="regName">ニックネーム</label>
@@ -176,9 +198,12 @@
         </div>
 
         <div class="input-group">
-            <label for="regPassword">あいことば（ひらがな10文字以内推奨）</label>
-            <input type="text" id="regPassword" placeholder="例：ひみつのぱす">
-            <div class="hint-text">※10文字までだよ（全ての濁音・半濁音がバグらず使えます！）</div>
+            <label>ひみつのパターン（4つ以上の点をつないでね）</label>
+            <div class="pattern-status" id="regStatus">4つ以上の点をつないでね</div>
+            <div class="pattern-holder">
+                <canvas id="regCanvas" class="pattern-canvas" width="260" height="260"></canvas>
+            </div>
+            <div class="hint-text">※忘れないように、なぞった形を覚えておいてね！</div>
         </div>
 
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
@@ -202,7 +227,7 @@
     </div>
 
     <div class="login-container hidden" id="forgotBox">
-        <h1>あいことばの確認</h1>
+        <h1>パターンの確認</h1>
         <p style="font-size: 13px; color: #555;">登録したニックネームと、質問にこたえてね</p>
         
         <div class="input-group">
@@ -223,7 +248,7 @@
             <div class="color-picker-grid" id="forgotColorGrid"></div>
         </div>
 
-        <button class="btn" onclick="checkAnswers()">合言葉をチェックする 🔍</button>
+        <button class="btn" onclick="checkAnswers()">パターン（番号）をチェックする 🔍</button>
         <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
     </div>
 
@@ -246,24 +271,157 @@
             return encodeURIComponent(name) + "@moneymo.internal";
         }
 
-        // 🌟 どんな濁音・半濁音でも絶対にデータが壊れないよう、安全なパディング付きエンコードに修正しました
-        function convertToStrongPassword(hiraganaPassword) {
-            return btoa(encodeURIComponent(hiraganaPassword)).replace(/=/g, "9") + "Xj1!";
+        function makeFirebasePassword(patternCode) {
+            return patternCode + "_patternAuth777";
         }
 
+        // 🎨 --- パターンロックのプログラム制御クラス ---
+        class PatternLock {
+            constructor(canvasId, statusId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.statusEl = document.getElementById(statusId);
+                this.points = [];
+                this.selectedPoints = [];
+                this.isDrawing = false;
+                this.currentPos = { x: 0, y: 0 };
+                this.initPoints();
+                this.initEvents();
+                this.draw();
+            }
+
+            initPoints() {
+                const size = 260;
+                const spacing = size / 4;
+                this.points = [];
+                let id = 1;
+                for (let row = 0; row < 3; row++) {
+                    for (let col = 0; col < 3; col++) {
+                        this.points.push({
+                            id: id++,
+                            x: spacing * (col + 1),
+                            y: spacing * (row + 1),
+                            radius: 12
+                        });
+                    }
+                }
+            }
+
+            initEvents() {
+                const getPos = (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return { x: clientX - rect.left, y: clientY - rect.top };
+                };
+
+                const start = (e) => {
+                    e.preventDefault();
+                    this.isDrawing = true;
+                    this.selectedPoints = [];
+                    this.currentPos = getPos(e);
+                    this.checkCollision(this.currentPos);
+                    this.draw();
+                };
+
+                const move = (e) => {
+                    if (!this.isDrawing) return;
+                    e.preventDefault();
+                    this.currentPos = getPos(e);
+                    this.checkCollision(this.currentPos);
+                    this.draw();
+                };
+
+                const end = () => {
+                    if (!this.isDrawing) return;
+                    this.isDrawing = false;
+                    this.draw();
+                    if (this.selectedPoints.length > 0) {
+                        const code = this.getPatternCode();
+                        this.statusEl.innerText = `なぞり終わりました！ (繋いだ数: ${this.selectedPoints.length})`;
+                    }
+                };
+
+                this.canvas.addEventListener('mousedown', start);
+                this.canvas.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', end);
+                this.canvas.addEventListener('touchstart', start, { passive: false });
+                this.canvas.addEventListener('touchmove', move, { passive: false });
+                window.addEventListener('touchend', end);
+            }
+
+            checkCollision(pos) {
+                for (let p of this.points) {
+                    const dist = Math.hypot(p.x - pos.x, p.y - pos.y);
+                    if (dist < p.radius + 15) { // 少し判定を広めに
+                        if (!this.selectedPoints.includes(p)) {
+                            this.selectedPoints.push(p);
+                            this.statusEl.innerText = "なぞっています...";
+                        }
+                        break;
+                    }
+                }
+            }
+
+            getPatternCode() {
+                return this.selectedPoints.map(p => p.id).join('');
+            }
+
+            clear() {
+                this.selectedPoints = [];
+                this.isDrawing = false;
+                this.statusEl.innerText = "点をつないでね";
+                this.draw();
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, 260, 260);
+
+                // 線を描画
+                if (this.selectedPoints.length > 0) {
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#4fc3f7';
+                    this.ctx.lineWidth = 6;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
+                    this.ctx.moveTo(this.selectedPoints[0].x, this.selectedPoints[0].y);
+                    for (let i = 1; i < this.selectedPoints.length; i++) {
+                        this.ctx.lineTo(this.selectedPoints[i].x, this.selectedPoints[i].y);
+                    }
+                    if (this.isDrawing) {
+                        this.ctx.lineTo(this.currentPos.x, this.currentPos.y);
+                    }
+                    this.ctx.stroke();
+                }
+
+                // 点（ドット）を描画
+                this.points.forEach(p => {
+                    const isSelected = this.selectedPoints.includes(p);
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = isSelected ? '#4fc3f7' : '#b0bec5';
+                    this.ctx.fill();
+
+                    // 選択された点の中心にさらに小さな点を重ねる
+                    if (isSelected) {
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fill();
+                    }
+                });
+            }
+        }
+
+        // フォーム用変数とカラーパレット
+        let regLock, loginLock;
         const colorPalette = [
-            { name: "aka", hex: "#ef5350" },    
-            { name: "pinku", hex: "#f48fb1" },  
-            { name: "daidai", hex: "#ffb74d" }, 
-            { name: "kiiro", hex: "#fff176" },  
-            { name: "midori", hex: "#81c784" }, 
-            { name: "mizu", hex: "#4fc3f7" },   
-            { name: "ao", hex: "#64b5f6" },     
-            { name: "murasaki", hex: "#ba68c8" },
-            { name: "cha", hex: "#a1887f" },    
-            { name: "siro", hex: "#e0e0e0" },   
-            { name: "hai", hex: "#90a4ae" },    
-            { name: "kuro", hex: "#37474f" }    
+            { name: "aka", hex: "#ef5350" }, { name: "pinku", hex: "#f48fb1" },  
+            { name: "daidai", hex: "#ffb74d" }, { name: "kiiro", hex: "#fff176" },  
+            { name: "midori", hex: "#81c784" }, { name: "mizu", hex: "#4fc3f7" },   
+            { name: "ao", hex: "#64b5f6" }, { name: "murasaki", hex: "#ba68c8" },
+            { name: "cha", hex: "#a1887f" }, { name: "siro", hex: "#e0e0e0" },   
+            { name: "hai", hex: "#90a4ae" }, { name: "kuro", hex: "#37474f" }    
         ];
 
         let selectedRegisterColor = "";
@@ -274,6 +432,10 @@
             setupDateDropdowns('forgotMonth', 'forgotDay');
             createColorGrid('regColorGrid', 'reg');
             createColorGrid('forgotColorGrid', 'forgot');
+            
+            // キャンバスコントロールを起動
+            loginLock = new PatternLock('loginCanvas', 'loginStatus');
+            regLock = new PatternLock('regCanvas', 'regStatus');
         }
 
         function setupDateDropdowns(monthId, dayId) {
@@ -310,45 +472,48 @@
             document.getElementById('registerBox').classList.add('hidden');
             document.getElementById('forgotBox').classList.add('hidden');
             document.getElementById(boxId).classList.remove('hidden');
+            
+            // 切り替えた時に描画キャンバスをリセット
+            if(boxId === 'loginBox') loginLock.clear();
+            if(boxId === 'registerBox') regLock.clear();
         }
 
         // 新規登録
         function register() {
             const name = document.getElementById('regName').value.trim();
-            let password = document.getElementById('regPassword').value.trim();
+            const patternCode = regLock.getPatternCode();
             const month = document.getElementById('regMonth').value;
             const day = document.getElementById('regDay').value;
             const ansColor = selectedRegisterColor;
 
-            if (!name || !password || !month || !day || !ansColor) {
-                alert("ぜんぶ入力（選択）してね！");
+            if (!name || !month || !day || !ansColor) {
+                alert("ニックネームと質問の答えを入力・選択してね！");
                 return;
             }
 
-            if (password.length > 10) {
-                alert("あいことばは10文字以内で決めてね！");
+            if (patternCode.length < 4) {
+                alert("パターンは安全のために【点を4つ以上】つないでね！");
                 return;
             }
 
             const pseudoEmail = convertToEmail(name);
-            const strongPassword = convertToStrongPassword(password);
+            const firebasePassword = makeFirebasePassword(patternCode);
             const birthdayStr = `${month}月${day}日`;
 
-            auth.createUserWithEmailAndPassword(pseudoEmail, strongPassword)
+            auth.createUserWithEmailAndPassword(pseudoEmail, firebasePassword)
                 .then((userCredential) => {
                     const userId = userCredential.user.uid;
                     
                     database.ref('users/' + userId).set({
                         nickname: name,
                         pseudoEmail: pseudoEmail,
-                        passwordHint: password, 
+                        passwordHint: `パターンコード: ${patternCode}`, 
                         question1: birthdayStr,
                         question2: ansColor
                     }).then(() => {
-                        alert("登録ができたよ！ログインしてみてね✨");
+                        alert("登録ができたよ！同じ形でなぞってログインしてみてね✨");
                         showBox('loginBox');
                         document.getElementById('loginName').value = name;
-                        document.getElementById('loginPassword').value = password;
                     });
                 })
                 .catch((error) => {
@@ -363,28 +528,33 @@
         // ログイン
         function login() {
             const name = document.getElementById('loginName').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
+            const patternCode = loginLock.getPatternCode();
 
-            if (!name || !password) {
-                alert("ニックネームと合言葉をいれてね！");
+            if (!name) {
+                alert("ニックネームをいれてね！");
+                return;
+            }
+            if (patternCode.length === 0) {
+                alert("ひみつのパターンをなぞってね！");
                 return;
             }
 
             const pseudoEmail = convertToEmail(name);
-            const strongPassword = convertToStrongPassword(password);
+            const firebasePassword = makeFirebasePassword(patternCode);
 
-            auth.signInWithEmailAndPassword(pseudoEmail, strongPassword)
+            auth.signInWithEmailAndPassword(pseudoEmail, firebasePassword)
                 .then((userCredential) => {
                     alert("ログイン大成功！");
                     sessionStorage.setItem('isLoggedIn', 'true');
                     window.location.href = "index.html";
                 })
                 .catch((error) => {
-                    alert("ニックネームか合言葉がちがうみたい…💦");
+                    alert("なまえか、なぞった形がちがうみたい…💦");
+                    loginLock.clear(); // 失敗したらリセット
                 });
         }
 
-        // あいことばを忘れたとき
+        // パターン（ヒント）を確認するとき
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
             const month = document.getElementById('forgotMonth').value;
@@ -416,9 +586,8 @@
                 if (foundUserData.question1 === birthdayStr && 
                     foundUserData.question2 === forgotColor) {
                     
-                    alert(`大正解！あなたのあいことばは【 ${foundUserData.passwordHint} 】だよ！`);
+                    alert(`大正解！あなたの登録データ：\n【 ${foundUserData.passwordHint} 】\n※左上から右へ 1, 2, 3... の順のドット番号だよ！`);
                     showBox('loginBox');
-                    document.getElementById('loginPassword').value = foundUserData.passwordHint;
                 } else {
                     alert("こたえがちがうみたいだよ…もういちど確かめてね💦");
                 }
