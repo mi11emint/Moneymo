@@ -153,8 +153,8 @@
         </div>
 
         <div class="input-group">
-            <label for="loginPassword">あいことば（ひらがな）</label>
-            <input type="password" id="loginPassword" placeholder="ひらがなでいれてね">
+            <label for="loginPassword">あいことば</label>
+            <input type="password" id="loginPassword" placeholder="あいことばをいれてね">
         </div>
 
         <button class="btn" onclick="login()">ログインする 🔑</button>
@@ -163,10 +163,9 @@
             <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しく登録）</span>
         </div>
         <div>
-            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわすれたとき</span>
+            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわわすれたとき</span>
         </div>
     </div>
-
 
     <div class="login-container hidden" id="registerBox">
         <h1>新しくあいことばをきめる</h1>
@@ -177,9 +176,9 @@
         </div>
 
         <div class="input-group">
-            <label for="regPassword">あいことば（ひらがなのみ10文字以内）</label>
-            <input type="text" id="regPassword" placeholder="例：ひみつのぱす" oninput="limitLength(this, 10)">
-            <div class="hint-text">※ひらがなだけで10文字までだよ（濁音もOK！）</div>
+            <label for="regPassword">あいことば（ひらがな10文字以内推奨）</label>
+            <input type="text" id="regPassword" placeholder="例：ひみつのぱす">
+            <div class="hint-text">※10文字までだよ（濁音・半濁音もバグらず使えます！）</div>
         </div>
 
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
@@ -201,7 +200,6 @@
         <button class="btn" onclick="register()">これで登録する ✨</button>
         <button class="btn btn-secondary" onclick="showBox('loginBox')">もどる</button>
     </div>
-
 
     <div class="login-container hidden" id="forgotBox">
         <h1>あいことばの確認</h1>
@@ -230,7 +228,6 @@
     </div>
 
     <script>
-        // Firebaseの設定
         const firebaseConfig = {
             apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
             authDomain: "moneymo-3c572.firebaseapp.com",
@@ -245,12 +242,10 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        // ニックネームを擬似メールアドレスに変換
         function convertToEmail(name) {
             return encodeURIComponent(name) + "@moneymo.internal";
         }
 
-        // ひらがなパスワードを最強英数字記号に変換
         function convertToStrongPassword(hiraganaPassword) {
             return btoa(encodeURIComponent(hiraganaPassword)).replace(/[^a-zA-Z0-9]/g, "") + "X9!";
         }
@@ -316,24 +311,10 @@
             document.getElementById(boxId).classList.remove('hidden');
         }
 
-        // 入力中は文字消去をせず、文字数の制限だけを行う（バグ防止）
-        function limitLength(input, max) {
-            if (input.value.length > max) {
-                input.value = input.value.substring(0, max);
-            }
-        }
-
-        // 登録・ログイン時に「ひらがな（濁音含む）」かどうかを判定する安全な関数
-        function isHiraganaOnly(str) {
-            // ひらがな、濁音・半濁音結合文字、長音符以外が含まれているかチェック
-            const hiraganaRegex = /^[ぁ-ん\u3099\u309A゛゜ー]+$/;
-            return hiraganaRegex.test(str);
-        }
-
-        // 新規登録
+        // 🌟 新規登録
         function register() {
             const name = document.getElementById('regName').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
+            let password = document.getElementById('regPassword').value.trim();
             const month = document.getElementById('regMonth').value;
             const day = document.getElementById('regDay').value;
             const ansColor = selectedRegisterColor;
@@ -343,9 +324,9 @@
                 return;
             }
 
-            // ボタンを押したタイミングで優しくチェック
-            if (!isHiraganaOnly(password)) {
-                alert("あいことばは「ひらがな」だけで入力してね！(濁音や「ー」も使えるよ)");
+            // 🌟 文字数制限のチェックを登録ボタンを押した時に行う
+            if (password.length > 10) {
+                alert("あいことばは10文字以内で決めてね！");
                 return;
             }
 
@@ -379,7 +360,7 @@
                 });
         }
 
-        // ログイン
+        // 🌟 ログイン
         function login() {
             const name = document.getElementById('loginName').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -403,7 +384,7 @@
                 });
         }
 
-        // あいことばを忘れたとき
+        // 🌟 あいことばを忘れたとき
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
             const month = document.getElementById('forgotMonth').value;
