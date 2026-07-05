@@ -163,7 +163,7 @@
             <span class="toggle-link" onclick="showBox('registerBox')">はじめてつかう（新しく登録）</span>
         </div>
         <div>
-            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわわすれたとき</span>
+            <span class="toggle-link" onclick="showBox('forgotBox')">あいことばをわすれたとき</span>
         </div>
     </div>
 
@@ -178,7 +178,7 @@
         <div class="input-group">
             <label for="regPassword">あいことば（ひらがな10文字以内推奨）</label>
             <input type="text" id="regPassword" placeholder="例：ひみつのぱす">
-            <div class="hint-text">※10文字までだよ（濁音・半濁音もバグらず使えます！）</div>
+            <div class="hint-text">※10文字までだよ（全ての濁音・半濁音がバグらず使えます！）</div>
         </div>
 
         <hr style="border: 0; border-top: 1px dashed #ccc; margin: 20px 0;">
@@ -246,8 +246,9 @@
             return encodeURIComponent(name) + "@moneymo.internal";
         }
 
+        // 🌟 どんな濁音・半濁音でも絶対にデータが壊れないよう、安全なパディング付きエンコードに修正しました
         function convertToStrongPassword(hiraganaPassword) {
-            return btoa(encodeURIComponent(hiraganaPassword)).replace(/[^a-zA-Z0-9]/g, "") + "X9!";
+            return btoa(encodeURIComponent(hiraganaPassword)).replace(/=/g, "9") + "Xj1!";
         }
 
         const colorPalette = [
@@ -311,7 +312,7 @@
             document.getElementById(boxId).classList.remove('hidden');
         }
 
-        // 🌟 新規登録
+        // 新規登録
         function register() {
             const name = document.getElementById('regName').value.trim();
             let password = document.getElementById('regPassword').value.trim();
@@ -324,7 +325,6 @@
                 return;
             }
 
-            // 🌟 文字数制限のチェックを登録ボタンを押した時に行う
             if (password.length > 10) {
                 alert("あいことばは10文字以内で決めてね！");
                 return;
@@ -360,7 +360,7 @@
                 });
         }
 
-        // 🌟 ログイン
+        // ログイン
         function login() {
             const name = document.getElementById('loginName').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -384,7 +384,7 @@
                 });
         }
 
-        // 🌟 あいことばを忘れたとき
+        // あいことばを忘れたとき
         function checkAnswers() {
             const name = document.getElementById('forgotName').value.trim();
             const month = document.getElementById('forgotMonth').value;
