@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>かこのおこづかいちょう - まねーも</title>
+    <title>過去の記録 - まねーも</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
@@ -301,8 +301,8 @@
                     // データがある場合はその行数をそのまま表示
                     data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
                 } else {
-                    // 💡 データがない場合は3行表示にせず、元の通り「今月の目標など」の1行だけにします
-                    addRow(`${currentMonth}/1`, "今月の目標など", "", "");
+                    
+                    addRow(`${currentMonth}/1`, "記録がないよ", "", "");
                     saveLedgerData();
                 }
                 calculateTotal();
