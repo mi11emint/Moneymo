@@ -418,70 +418,86 @@
             }
         }
 
-        function saveLedgerData() {
-            if (!currentUserId) return;
-            const tbody = document.getElementById('ledgerBody');
-            const ledgerRows = [];
-            for (let i = 0; i < tbody.rows.length; i++) {
-                const select = tbody.rows[i].querySelector('select');
-                const textareas = tbody.rows[i].querySelectorAll('textarea');
-                if (select && textareas.length >= 3) {
-                    ledgerRows.push({
-                        date: select.value,
-                        content: textareas[0].value,
-                        income: textareas[1].value,
-                        expense: textareas[2].value
-                    });
-                }
-            }
-            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
-        }
+        // --- 前後の設定や初期化コードはそのまま ---
 
-        function loadLedgerData() {
-            if (!currentUserId) return;
-            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
-                const data = snapshot.val();
-                
-                // Firebaseから正しいデータが返ってきた場合のみ、画面をそのデータで上書きする
-                if (data && data.rows && data.rows.length > 0) {
-                    const tbody = document.getElementById('ledgerBody');
-                    tbody.innerHTML = ""; // 初期で作った3行をクリアして本物のデータを表示
-                    data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
-                    calculateTotal();
-                } else {
-                    // まだ今月のデータがない場合は、前月のデータをチェックして「前月くりこし」の金額を1行目に適用する
-                    let lastYear = currentYear;
-                    let lastMonth = currentMonth - 1;
-                    if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
-                    const lastMonthPath = `${lastYear}-${lastMonth}`;
-
-                    database.ref(`ledger_data/${currentUserId}/months/${lastMonthPath}`).once('value').then((lastSnapshot) => {
-                        const lastData = lastSnapshot.val();
-                        let carryOverMoney = 0;
-
-                        if (lastData && lastData.rows) {
-                            let totalIncome = 0;
-                            let totalExpense = 0;
-                            lastData.rows.forEach(item => {
-                                totalIncome += parseFloat(item.income) || 0;
-                                totalExpense += parseFloat(item.expense) || 0;
-                            });
-                            carryOverMoney = totalIncome - totalExpense;
-                        }
-
-                        // 初期3行の1行目に金額を反映させる
-                        const tbody = document.getElementById('ledgerBody');
-                        tbody.innerHTML = "";
-                        addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "0", "");
-                        addRow("1", "", "", "");
-                        addRow("1", "", "", "");
-                        
-                        calculateTotal();
-                        saveLedgerData(); // Firebaseへ初期状態を保存
-                    });
-                }
+function saveLedgerData() {
+    if (!currentUserId) return;
+    const tbody = document.getElementById('ledgerBody');
+    const ledgerRows = [];
+    for (let i = 0; i < tbody.rows.length; i++) {
+        const select = tbody.rows[i].querySelector('select');
+        const textareas = tbody.rows[i].querySelectorAll('textarea');
+        if (select && textareas.length >= 3) {
+            ledgerRows.push({
+                date: select.value,
+                content: textareas[0].value,
+                income: textareas[1].value,
+                expense: textareas[2].value
             });
         }
+    }
+    // 配列が空の場合でも、空のオブジェクトとして保存されないように明示的に保存
+    database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
+}
+
+function loadLedgerData() {
+    if (!currentUserId) return;
+    database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
+        const data = snapshot.val();
+        
+        // 🌟 修正ポイント: 配列でもオブジェクトでも、強制的に配列に変換する
+        let rowsArray = [];
+        if (data && data.rows) {
+            rowsArray = Array.isArray(data.rows) ? data.rows : Object.values(data.rows);
+        }
+        
+        // 変換した配列の長さでデータが存在するかチェック
+        if (rowsArray.length > 0) {
+            const tbody = document.getElementById('ledgerBody');
+            tbody.innerHTML = ""; // 初期で作った3行をクリア
+            rowsArray.forEach(item => { 
+                addRow(item.date || "1", item.content || "", item.income || "", item.expense || ""); 
+            });
+            calculateTotal();
+        } else {
+            // まだ今月のデータがない場合は、前月のデータをチェックして「前月くりこし」の金額を1行目に適用する
+            let lastYear = currentYear;
+            let lastMonth = currentMonth - 1;
+            if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
+            const lastMonthPath = `${lastYear}-${lastMonth}`;
+
+            database.ref(`ledger_data/${currentUserId}/months/${lastMonthPath}`).once('value').then((lastSnapshot) => {
+                const lastData = lastSnapshot.val();
+                let carryOverMoney = 0;
+
+                if (lastData && lastData.rows) {
+                    const lastRowsArray = Array.isArray(lastData.rows) ? lastData.rows : Object.values(lastData.rows);
+                    let totalIncome = 0;
+                    let totalExpense = 0;
+                    lastRowsArray.forEach(item => {
+                        totalIncome += parseFloat(item.income) || 0;
+                        totalExpense += parseFloat(item.expense) || 0;
+                    });
+                    carryOverMoney = totalIncome - totalExpense;
+                }
+
+                // 初期3行の1行目に金額を反映させる
+                const tbody = document.getElementById('ledgerBody');
+                tbody.innerHTML = "";
+                addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "0", "");
+                addRow("1", "", "", "");
+                addRow("1", "", "", "");
+                
+                calculateTotal();
+                saveLedgerData(); // Firebaseへ初期状態を保存
+            });
+        }
+    }).catch((error) => {
+        console.error("データの読み込みに失敗しました:", error);
+    });
+}
+
+// --- 以下の initApp などのコードはそのまま ---
 
         function shareAsImage() {
             document.getElementById('controlPanel').style.display = 'none';
