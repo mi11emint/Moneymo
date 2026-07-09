@@ -145,13 +145,13 @@
                     </tr>
                 </thead>
                 <tbody id="ledgerBody">
-                    </tbody>
+                </tbody>
             </table>
         </div>
 
         <div class="table-controls">
             <button class="action-btn btn-secondary" onclick="deleteRow()">行をけす</button>
-            <button class="action-btn" onclick="addRow()">行をたす</button>
+            <button class="action-btn" onclick="addRowAndSave()">行をたす</button>
         </div>
 
         <div class="money-summary-box">
@@ -181,12 +181,15 @@
         const auth = firebase.auth();
         const database = firebase.database();
 
-        const today = new Date();
+       const today = new Date();
+        
+        // 🌟 これを1行挟むだけで、年をまたぐ計算（1月のときは自動で前年12月にする）を安全にやってくれます！
+        today.setMonth(today.getMonth() - 1);
+
         let currentYear = today.getFullYear();
-        let currentMonth = today.getMonth() + 1;
+        let currentMonth = today.getMonth() + 1; // ここは「+ 1」に戻します
         let currentUserId = null;
 
-        // メインページで保存した色と背景を完全に読み込む機能
         function loadDesignSettings() {
             const savedColor = localStorage.getItem('mainColor') || '#4fc3f7';
             document.documentElement.style.setProperty('--main-color', savedColor);
@@ -212,7 +215,6 @@
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
-            saveLedgerData();
         }
 
         function calculateTotal() {
@@ -232,14 +234,19 @@
             document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
         }
 
+        function addRowAndSave() {
+            addRow("", "", "", "");
+            saveLedgerData();
+        }
+
         function addRow(date = "", content = "", income = "", expense = "") {
             const tbody = document.getElementById('ledgerBody');
             const row = tbody.insertRow();
             row.innerHTML = `
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${date}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${content}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${income}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${expense}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); saveLedgerData()">${date}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); saveLedgerData()">${content}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${income}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${expense}</textarea></td>
             `;
             row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
         }
@@ -258,10 +265,11 @@
             if (currentMonth > 12) { currentMonth = 1; currentYear += 1; }
             else if (currentMonth < 1) { currentMonth = 12; currentYear -= 1; }
             document.getElementById('currentMonthDisplay').innerText = `${currentYear}年 ${currentMonth}月`;
+            
+            // 💡 過去のページでは月切り替え時に空の3行は作らず、データのロードを待ちます
             loadLedgerData();
         }
 
-        // 過去の月ごとデータをクラウドの独立した箱に保存
         function saveLedgerData() {
             if (!currentUserId) return;
             const tbody = document.getElementById('ledgerBody');
@@ -288,10 +296,14 @@
                 const data = snapshot.val();
                 const tbody = document.getElementById('ledgerBody');
                 tbody.innerHTML = "";
-                if (data && data.rows) {
+                
+                if (data && data.rows && data.rows.length > 0) {
+                    // データがある場合はその行数をそのまま表示
                     data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
                 } else {
+                    // 💡 データがない場合は3行表示にせず、元の通り「今月の目標など」の1行だけにします
                     addRow(`${currentMonth}/1`, "今月の目標など", "", "");
+                    saveLedgerData();
                 }
                 calculateTotal();
             });
@@ -313,6 +325,10 @@
         function initApp() {
             loadDesignSettings();
             document.getElementById('currentMonthDisplay').innerText = `${currentYear}年 ${currentMonth}月`;
+            
+            // 💡 初期表示時は読み込み完了までテーブルを空欄にしておきます
+            document.getElementById('ledgerBody').innerHTML = "";
+
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     currentUserId = user.uid;
