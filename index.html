@@ -61,7 +61,6 @@
 
         h1 { margin: 0; font-size: 20px; font-weight: 600; }
         
-        /* 🏷️ タイトルをシンプルに変更 */
         .current-month-title { font-size: 16px; color: var(--text-color); font-weight: bold; margin-bottom: 14px; text-align: center; letter-spacing: 1px; }
 
         .icon-btn {
@@ -70,7 +69,7 @@
         .icon-btn:active { transform: scale(0.85); }
         .pet-btn { font-size: 22px; }
 
-        /* ⚙️設定エリア */
+        /* 設定エリア */
         .control-panel {
             display: none; 
             background: rgba(255, 255, 255, 0.95);
@@ -142,7 +141,7 @@
         }
         tr td:nth-child(2) .cell-textarea { text-align: left; padding-left: 6px; }
 
-        /* 🗓️ 日付用のプルダウン（セレクトボックス）のスタイル設定 */
+        /* 日付用のプルダウン */
         .cell-select {
             width: 100%;
             height: 40px;
@@ -152,14 +151,14 @@
             background: transparent;
             color: inherit;
             font-family: inherit;
-            text-align-last: center; /* 文字を真ん中に寄せる */
+            text-align-last: center; 
             outline: none;
             cursor: pointer;
-            -webkit-appearance: none; /* スマホ固有の矢印をリセット */
+            -webkit-appearance: none; 
             appearance: none;
         }
         .cell-select option {
-            color: #333333; /* プルダウンを開いた時の文字色を見やすく固定 */
+            color: #333333; 
             background-color: #ffffff;
         }
 
@@ -196,7 +195,7 @@
             font-size: 20px;
             font-weight: bold;
             color: var(--text-color);
-            border-bottom: 2px double var(--main-color);
+            border-bottom: double var(--main-color);
             padding: 0 4px;
         }
 
@@ -255,13 +254,13 @@
                     </tr>
                 </thead>
                 <tbody id="ledgerBody">
-                    </tbody>
+                </tbody>
             </table>
         </div>
 
         <div class="table-controls">
             <button class="action-btn btn-secondary" onclick="deleteRow()">行をけす</button>
-            <button class="action-btn" onclick="addRow()">行をたす</button>
+            <button class="action-btn" onclick="addRowAndSaveWithToday()">行をたす</button>
         </div>
 
         <div class="money-summary-box">
@@ -295,6 +294,7 @@
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate(); // 今日の日付（数字）
         const monthPath = `${currentYear}-${currentMonth}`;
 
         function saveDesignSettings(key, value) { localStorage.setItem(key, value); }
@@ -315,7 +315,6 @@
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
-            saveLedgerData();
         }
 
         function calculateTotal() {
@@ -324,9 +323,7 @@
             const rows = document.getElementById('ledgerBody').getElementsByTagName('tr');
             for (let i = 0; i < rows.length; i++) {
                 const textareas = rows[i].getElementsByTagName('textarea');
-                const select = rows[i].getElementsByTagName('select')[0];
                 if (textareas.length >= 3) {
-                    // textareas[0]はことがら、[1]ははいった、[2]はつかった
                     const income = parseFloat(textareas[1].value) || 0;
                     const expense = parseFloat(textareas[2].value) || 0;
                     totalIncome += income;
@@ -382,15 +379,20 @@
             }
         }
 
-        // 🛠️ ひにちをプルダウン（1〜31）で生成するようにパワーアップ！
+        // 「行をたす」ボタン用：今日の日付で追加して保存
+        function addRowAndSaveWithToday() {
+            addRow(currentDay, "", "", "");
+            saveLedgerData();
+        }
+
         function addRow(date = "1", content = "", income = "", expense = "") {
             const tbody = document.getElementById('ledgerBody');
             const row = tbody.insertRow();
             
-            // 1〜31日までの選択肢を作る
             let optionsHtml = "";
             for (let d = 1; d <= 31; d++) {
-                optionsHtml += `<option value="${d}" ${String(date) === String(d) ? 'selected' : ''}>${d}</option>`;
+                // セレクトボックスの中身に「日」を付け、保存時は数字だけにする
+                optionsHtml += `<option value="${d}" ${String(date) === String(d) ? 'selected' : ''}>${d}日</option>`;
             }
 
             row.innerHTML = `
@@ -399,10 +401,11 @@
                         ${optionsHtml}
                     </select>
                 </td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this)">${content}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${income}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal()" placeholder="0">${expense}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); saveLedgerData()">${content}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${income}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${expense}</textarea></td>
             `;
+            
             row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
         }
 
@@ -438,13 +441,15 @@
             if (!currentUserId) return;
             database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
                 const data = snapshot.val();
-                const tbody = document.getElementById('ledgerBody');
-                tbody.innerHTML = "";
-
-                if (data && data.rows) {
+                
+                // Firebaseから正しいデータが返ってきた場合のみ、画面をそのデータで上書きする
+                if (data && data.rows && data.rows.length > 0) {
+                    const tbody = document.getElementById('ledgerBody');
+                    tbody.innerHTML = ""; // 初期で作った3行をクリアして本物のデータを表示
                     data.rows.forEach(item => { addRow(item.date, item.content, item.income, item.expense); });
                     calculateTotal();
                 } else {
+                    // まだ今月のデータがない場合は、前月のデータをチェックして「前月くりこし」の金額を1行目に適用する
                     let lastYear = currentYear;
                     let lastMonth = currentMonth - 1;
                     if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
@@ -464,10 +469,15 @@
                             carryOverMoney = totalIncome - totalExpense;
                         }
 
-                        // 初期設定は1日として追加
-                        addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "", "");
+                        // 初期3行の1行目に金額を反映させる
+                        const tbody = document.getElementById('ledgerBody');
+                        tbody.innerHTML = "";
+                        addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "0", "");
+                        addRow("1", "", "", "");
+                        addRow("1", "", "", "");
+                        
                         calculateTotal();
-                        saveLedgerData();
+                        saveLedgerData(); // Firebaseへ初期状態を保存
                     });
                 }
             });
@@ -490,13 +500,20 @@
 
         function initApp() {
             loadDesignSettings();
-            // タイトル表示を「✨ 2026年 7月 ✨」のようにシンプルに変更
             document.getElementById('pageMonthTitle').innerText = `✨ ${currentYear}年 ${currentMonth}月 ✨`;
             
+            // 🌟【超重要】Firebaseの通信を待たずに、開いた瞬間にまずは真っ白な3行を画面に絶対に作る！
+            const tbody = document.getElementById('ledgerBody');
+            tbody.innerHTML = "";
+            addRow("1", "", "", "");
+            addRow("1", "", "", "");
+            addRow("1", "", "", "");
+            calculateTotal();
+
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     currentUserId = user.uid;
-                    loadLedgerData();
+                    loadLedgerData(); // ログインできたらFirebaseのデータを上書きで見に行く
                 } else {
                     alert('ログインしてね！🔑');
                     window.location.href = "login.html";
