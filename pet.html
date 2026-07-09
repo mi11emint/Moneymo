@@ -2,13 +2,25 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>まねーもの空</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>まねもの空</title>
     <style>
+        /* 提示いただいたボックスサイジングの初期化 */
+        *, *:before, *:after {
+            -webkit-box-sizing: inherit;
+            box-sizing: inherit;
+        }
+
         :root {
             --sky-gradient: linear-gradient(to bottom, #4fc3f7, #e0f7fa);
             --text-color: #2c3e50;
-            --main-color: #4fc3f7; 
+            --main-color: #4fc3f7; /* 時間帯でJavaScriptから書き換わるメイン色 */
+        }
+
+        html {
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            font-size: 62.5%; 
         }
 
         body {
@@ -21,163 +33,366 @@
             justify-content: space-between;
             overflow: hidden;
             transition: background 1s ease;
+            position: relative;
         }
 
-        /* 上部メニューエリア */
-        .top-menu {
+/* --- 🌌 宇宙の背景エフェクト --- */
+body::before, body::after {
+content: "";
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+z-index: -1;
+pointer-events: none;
+}
+body::before {
+background-image:
+radial-gradient(1.5px 1.5px at 20% 30%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 40% 70%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 60% 20%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 15% 85%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 85% 15%, #ffffff, rgba(0,0,0,0));
+background-size: 350px 350px;
+animation: twinkleCSS 4s infinite alternate ease-in-out;
+}
+body::after {
+background-image:
+radial-gradient(1.5px 1.5px at 80% 50%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 30% 80%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 10% 40%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 90% 90%, #ffffff, rgba(0,0,0,0));
+background-size: 250px 250px;
+animation: twinkleCSS 3s infinite alternate-reverse ease-in-out;
+}
+@keyframes twinkleCSS {
+0% { opacity: 0.1; }
+100% { opacity: 1; }
+}
+.info-text-area {
+width: 100%;
+max-width: 420px;
+text-align: left;
+font-size: 0.70rem;
+line-height: 1.6;
+letter-spacing: 1px;
+opacity: 0.8;
+margin-bottom: 12px;
+padding: 0 12px;
+}
+
+        /* 📱 上部コントロールエリア */
+        .header-control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 16px 12px 12px 12px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(4px);
+            gap: 16px;
             z-index: 10;
         }
 
-        .menu-grid-row {
-            display: grid;
-            grid-template-columns: 44px 1fr; 
+        .action-button-row {
+            display: flex;
             gap: 12px;
+            justify-content: space-between;
+        }
+
+        .btn {
+            flex: 1;
+            font-size: 1.2rem; 
+            font-weight: 700;
+            line-height: 2;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0.5rem;
+            cursor: pointer;
+            text-align: center;
+            vertical-align: middle;
+            text-decoration: none;
+            letter-spacing: 0.1em;
+            
+            /* 【修正】下の本体ボタンは白背景のみ、枠線（border）は無し */
+            background: #fff;
+            color: var(--main-color); /* 文字色はお空の色 */
+            border: none; 
+            border-radius: 100vh; /* 角丸カプセル型 */
+            
+            outline: none;
+            min-width: 0;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        /* 【修正】上の浮いたような枠線を、左上にずらして配置する正しい仕組み */
+        .btn:before {
+            position: absolute;
+            top: -1.5px;  /* 上にずらす */
+            left: -1.5px; /* 左にずらす */
+            width: 100%;
+            height: 100%;
+            content: "";
+            border: 1.5px solid var(--main-color); /* お空の色の枠線 */
+            border-radius: 100vh;
+            z-index: 1; /* 本体の白ボタンより前面に重ねる */
+            transition: all 0.2s ease;
+            pointer-events: none; /* ボタンのクリックを邪魔しない */
+        }
+
+        /* ボタンを押したときのアニメーション（枠線が中心にぴったり引っ込む） */
+        .btn:active:before {
+            top: 0;
+            left: 0;
+        }
+
+        /* 入力フォームの行 */
+        .input-row {
+            display: flex;
+            gap: 10px;
             align-items: center;
         }
-
-        .menu-btn {
-            padding: 8px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.7);
-            color: #2c3e50;
-            border-radius: 15px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: left; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            outline: none;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .menu-btn:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.9); }
         
-        .icon-btn-menu {
-            width: 40px; height: 40px; padding: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; border-radius: 12px; text-align: center;
+        /* チャット入力欄もボタンと同じ正しい二重枠の仕組みを適用 */
+        .chat-input-wrapper {
+            flex: 1;
+            position: relative;
         }
-        .back-ledger-btn { background: rgba(47, 54, 64, 0.15); }
-        .music-playing { background: #ff80ab !important; border-color: #ff4081 !important; }
+        .chat-input {
+            width: 100%;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 100vh;
+            font-size: 1.4rem;
+            background: #fff;
+            outline: none;
+            color: #212529;
+            box-shadow: none;
+        }
+        .chat-input-wrapper:before {
+            position: absolute;
+            top: -5px; left: -5px;
+            width: calc(100% + 10px); height: calc(100% + 10px);
+            content: "";
+            border: 0px solid var(--main-color);
+            border-radius: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* 入力フォーム横の丸ボタン（マイク・送信） */
+        .btn-circle {
+            width: 42px;
+            height: 42px;
+            font-size: 1.6rem;
+            border-radius: 50% !important;
+            padding: 0;
+            flex: 0 0 42px;
+        }
+        .btn-circle:before {
+            border-radius: 50% !important;
+        }
 
-        .name-display-container { display: flex; gap: 8px; align-items: center; width: 100%; }
-        .name-display-container div { font-size: 14px; color: #2c3e50; font-weight: bold; }
+        /* 📋 設定＆アーカイブポップアップ */
+        .settings-panel {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 360px; background: white; border-radius: 12px; padding: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25); z-index: 110;
+            border: 3px solid var(--main-color);
+        }
+        .panel-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 8px; text-align: center; color: #2c3e50; }
+        
+        .point-badge-row {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f0faff; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; font-size: 1.2rem;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .archive-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 160px; overflow-y: auto; margin: 10px 0; padding: 4px; border: 1px solid #f0f0f0; border-radius: 6px; }
+        .archive-item { background: #f7f9fa; border-radius: 6px; padding: 4px; text-align: center; cursor: pointer; font-size: 1.1rem; border: 2px solid transparent; position: relative; color: #212529;}
+        .archive-item:hover { border-color: var(--main-color); }
+        .archive-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; margin-bottom: 2px; }
+        
+        .delete-archive-btn {
+            position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(239, 83, 80, 0.9);
+            color: white; border: none; border-radius: 50%; font-size: 1.0rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5;
+        }
 
         /* ステージ */
-        .stage { flex: 1; width: 100%; position: relative; touch-action: none; }
+        .stage { flex: 1; width: 100%; position: relative; touch-action: none; z-index: 5; }
 
-        /* ペットのコンテナ */
         .ameba-pet {
-            width: 150px; height: 150px; 
-            background: rgba(255, 255, 255, 0.85);
-            border: 4px solid var(--main-color); 
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
-            border-radius: 50%; 
-            position: absolute; left: calc(50% - 75px); top: calc(50% - 75px);
-            display: flex; justify-content: center; align-items: center;
-            user-select: none; cursor: pointer; z-index: 5;
-            overflow: hidden; 
-            outline: none;
+            width: 150px; height: 150px; background: rgba(255, 255, 255, 0.85); border: 4px solid var(--main-color); 
+            /* 👇 まねもに触れた時の青い四角やハイライトを消す設定 */
+            -webkit-tap-highlight-color: transparent; /* スマホでタップした時の青い影を透明にする */
+            user-select: none; /* 文字や画像として選択されるのを防ぐ */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); border-radius: 50%; position: absolute; left: calc(50% - 75px); top: calc(50% - 75px);
+            display: flex; justify-content: center; align-items: center; user-select: none; cursor: pointer; z-index: 5; overflow: hidden; outline: none;
             transition: top 1.5s ease-in-out, left 1.5s ease-in-out, transform 0.5s ease;
         }
         .pet-moving { animation: floaty 3s ease-in-out infinite alternate; }
-        .pet-face { font-size: 32px; color: #4a5568; user-select: none; pointer-events: none; }
-        
-        /* イラスト表示用エリア */
+        .pet-face { font-size: 32px; color: #4a5568; }
         .pet-image-container { width: 100%; height: 100%; position: relative; display: none; }
         .pet-image { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 👁️ 瞬きエフェクト */
         .eyelids { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; pointer-events: none; z-index: 6; }
         .blink-animation { animation: blink-eyes 5s infinite ease-in-out; }
-
         @keyframes blink-eyes {
             0%, 90%, 94%, 100% { clip-path: inset(0% 0% 100% 0%); }
-            92%, 96% {
-                background: rgba(255, 255, 255, 0.95);
-                clip-path: inset(35% 0% 45% 0%);
-                border-bottom: 3px solid #4a5568;
-            }
+            92%, 96% { background: rgba(255, 255, 255, 0.95); clip-path: inset(35% 0% 45% 0%); border-bottom: 3px solid #4a5568; }
         }
-
-        .pet-follow-mode { box-shadow: 0 10px 25px rgba(255, 255, 255, 0.8); }
-
         @keyframes floaty { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-15px) rotate(2deg); } }
 
-        /* 📺 YouTubeプレイヤーのポップアップスタイル */
+        /* 📺 YouTubeプレイヤー枠 */
         .youtube-panel {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 400px; background: white; border-radius: 16px; padding: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100;
+            width: 90%; max-width: 400px; background: rgba(255,255,255,0.5); border-radius: 12px; padding: 12px; box-shadow: 0 10px 30px rgba(255,255,255,0.5); z-index: 100;
+            border: 3px solid var(--main-color);
         }
-        .youtube-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 13px; color: #2c3e50; }
-        .youtube-close-btn { background: #e0e0e0; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 11px; }
+        .youtube-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 1.3rem; color: #2c3e50; }
+        .youtube-close-btn { background: #e0e0e0; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 1.1rem; }
         .iframe-container { position: relative; width: 100%; padding-top: 56.25%; }
         .iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px; }
 
-        /* 下部エリア */
-        .bottom-cloud-area {
-            position: relative; width: 100%; padding-bottom: 24px;
-            display: flex; flex-direction: column; align-items: center;
-            transition: transform 0.3s ease, opacity 0.3s ease; z-index: 10;
+        .bottom-cloud-area { 
+            position: relative; width: 100%; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; z-index: 10; transition: opacity 0.5s ease, transform 0.5s ease; 
         }
-        .cloud-box {
-            width: 90%; max-width: 500px; background: rgba(255, 255, 255, 0.95);
-            border-radius: 30px; padding: 20px; box-sizing: border-box;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; margin-bottom: 12px;
+        .cloud-box { 
+            width: 90%; max-width: 500px; 
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px; 
+            padding: 16px; 
+            box-sizing: border-box; 
+            position: relative; 
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        .cloud-box::before { content: ''; position: absolute; top: -15px; left: 30px; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.95); border-radius: 50%; }
-        .pet-speech { font-size: 14px; line-height: 1.5; color: #2c3e50; min-height: 42px; }
+        /* 左上の白丸吹き出し飾り */
+        .cloud-box::before { 
+            content: ''; 
+            position: absolute; 
+            top: -15px; 
+            left: 20px; 
+            width: 30px; 
+            height: 30px; 
+            background: rgba(255,255,255,0.9); 
+            border-radius: 50%; 
+        }
+        .pet-speech { font-size: 1.5rem; line-height: 1.5; color: #2c3e50; min-height: 38px; text-align: center; }
 
-        .input-row { width: 90%; max-width: 500px; display: flex; gap: 8px; }
-        .chat-input { flex: 1; border: none; padding: 12px 16px; border-radius: 20px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; }
-
-        .icon-btn {
-            background: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 18px; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .icon-btn:active { transform: scale(0.9); }
         #cancelWatchArea { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; cursor: pointer; display: none; }
+        .overlay-bg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:105; }
+
+        /* 特殊背景演出用のキャンバス */
+        #effectCanvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; pointer-events: none; display: none;
+        }
+        
+        /* 🌈 グラデーションで表現する軽量な虹のスタイル */
+        #rainbowContainer {
+            display: none; /* 最初は非表示 */
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            pointer-events: none; /* タップをすり抜けさせて操作を邪魔しない */
+            z-index: 2; /* 背景演出用（ステージより後ろ） */
+            opacity: 0;  /* 🌟 初期状態を透明(0)にしておきます */
+            transition: opacity 2s ease; /* 🌟 2秒かけてじわっと変化させる設定 */
+        }
+/* 🌈 虹が表示されているときの状態（JavaScriptから付与します） */
+        #rainbowContainer.rainbow-active {
+            opacity: 0.6; /* お空に綺麗に馴染む不透明度（お好みの濃さに調整してください） */
+        }
+        .rainbow {
+            position: absolute;
+            /* 画面の下端中央付近から広がるように配置 */
+            bottom: -300px;
+            left: calc(50% - 400px); 
+            width: 800px;
+            height: 800px;
+            /* 🎨 円形グラデーションを使って、1つの要素の中に虹色を表現します */
+            background: radial-gradient(
+                circle at center,
+                transparent 50%,
+                #920783 50%, #920783 53%, /* 紫 */
+                #1D2088 53%, #1D2088 56%, /* 紺 */
+                #0068B7 56%, #0068B7 59%, /* 青 */
+                #009944 59%, #009944 62%, /* 緑 */
+                #FFF100 62%, #FFF100 65%, /* 黄 */
+                #F39800 65%, #F39800 68%, /* 橙 */
+                #E60012 68%, #E60012 71%, /* 赤 */
+                transparent 71%
+            );
+            border-radius: 50%;
+        }
+        
+        
+        
     </style>
 </head>
 <body>
-
+<div id="rainbowContainer">
+        <div class="rainbow"></div>
+    </div>
     <div id="cancelWatchArea" onclick="endWatchMode()"></div>
+    <div class="overlay-bg" id="overlayBg" onclick="closeSettingsPanel()"></div>
 
-    <div class="top-menu" id="topMenu">
-        <div class="menu-grid-row">
-            <button class="menu-btn icon-btn-menu back-ledger-btn" onclick="goToLedger()">📓</button>
-            <div class="name-display-container">
-                <div id="petNameLabel">なまえ: もっちー</div>
+    <canvas id="effectCanvas"></canvas>
+
+    <div class="header-control-panel" id="headerPanel">
+        <div class="action-button-row">
+            <button class="btn" onclick="goToLedger()">📓ｵｺﾂﾞｶｲﾁｮｳ</button>
+            <button class="btn" onclick="openGuide()">📖ﾄﾘｾﾂ</button>
+            <button class="btn" onclick="openSettingsPanel()">⚙️ｾｯﾃｲ</button>
+        </div>
+
+        <div class="action-button-row">
+            <button class="btn" onclick="startWatchMode()">☁️ﾅｶﾞﾒﾙ</button>
+            <button class="btn" onclick="triggerSkyEffect()">🌈ｴﾌｪｸﾄ</button>
+            <button class="btn" id="musicBtn" onclick="toggleYouTubePanel()">♬ｵﾝｶﾞｸ</button>
+            <button class="btn" onclick="transformPet()">✨ ﾍﾝｼﾝ</button>
+        </div>
+
+        <div class="input-row">
+            <div class="chat-input-wrapper">
+                <input type="text" class="chat-input" id="petInput" placeholder="お話や、なりたい姿を入力してね...">
             </div>
-        </div>
-
-        <div class="menu-grid-row">
-            <button class="menu-btn icon-btn-menu" id="musicBtn" onclick="toggleYouTubePanel()">🎵</button>
-            <button class="menu-btn" onclick="startWatchMode()">☁️ ながめるモードを起動</button>
-        </div>
-
-        <div class="menu-grid-row">
-            <button class="menu-btn icon-btn-menu" onclick="resetPet()">⸌⍤⃝⸍</button>
-            <button class="menu-btn" onclick="transformPet()">🎨 イラストを入力して1日1回変身！</button>
-        </div>
-
-        <div class="menu-grid-row">
-            <div style="width: 40px;"></div>
-            <div style="font-size: 11px; color:#2c3e50; font-weight:bold; padding-left:4px;" id="transformStatus">今日の変身はまだしてないもんも！</div>
+            <button class="btn btn-circle" id="micBtn" onclick="toggleSpeechRecognition()">🎙</button>
+            <button class="btn btn-circle" onclick="sendToPet()">🕊</button>
         </div>
     </div>
 
-    <!-- 📺 YouTubeプレイヤーのポップアップ枠 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="panel-title">⚙️ まねもの設定</div>
+        
+        <div class="point-badge-row">
+            <div>🪙 所持: <b id="displayPoints">0</b> pt</div>
+            <div>📦 枠: <b id="displayCount">0</b> / <b id="displayMax">30</b></div>
+            <button onclick="extendArchiveSlot()" style="padding:4px 8px; font-size:11px; background:var(--main-color); color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">+1枠 (50pt)</button>
+        </div>
+
+        <div style="margin-bottom: 12px; text-align: left;">
+            <label style="font-size:11px; font-weight:bold; color:#555;">名前をかえる:</label>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+                <input type="text" id="newNameInput" style="padding:6px; font-size:13px; border:1px solid #ccc; border-radius:8px; flex:1;">
+                <button onclick="savePetName()" style="padding:6px 12px; font-size:12px; background:var(--main-color); color:white; border:none; border-radius:8px; font-weight:bold;">保存</button>
+            </div>
+        </div>
+        
+        <hr style="border:0; border-top:1px dashed #eee;">
+        <div class="panel-title" style="font-size:13px; margin-top:6px;"> アーカイブ（タップで姿を変更）</div>
+        <div class="archive-grid" id="archiveGrid"></div>
+
+        <button class="btn" onclick="resetPet()" style="var(--main-color); margin-top:8px; width:100%;">もとの姿にもどす</button>
+        
+        <button class="btn" onclick="closeSettingsPanel()" style="var(--main-color); margin-top:14px; width:100%;">とじる</button>
+    </div>
+
     <div class="youtube-panel" id="youtubePanel">
         <div class="youtube-panel-header">
-            <span>まねものお気に入りBGM🎧</span>
+            <span>ゆっくりやすむも*.+ﾟ</span>
             <button class="youtube-close-btn" onclick="toggleYouTubePanel()">✕</button>
         </div>
         <div class="iframe-container">
@@ -198,14 +413,8 @@
     <div class="bottom-cloud-area" id="bottomCloudArea">
         <div class="cloud-box">
             <div class="pet-speech" id="speechBubble">
-                <span id="initialText"></span>
+                <span id="initialText">のんびりしてっても</span>
             </div>
-        </div>
-
-        <div class="input-row">
-            <input type="text" class="chat-input" id="petInput" placeholder="お話しや、なりたい姿のイラストを入力してね...">
-            <button class="icon-btn" onclick="sendToPet()">🕊️</button>
-            <button class="icon-btn" id="micBtn" onclick="toggleSpeechRecognition()">🎤</button>
         </div>
     </div>
 
@@ -225,43 +434,115 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 🌟 1. 【製作者設定】GeminiのAPIキーをここに直接貼り付けてください！
-        let geminiApiKey = "ここにあなたのAPIキーを貼り付けてください";
+        let geminiApiKey = "AQ.Ab8RN6JEmA46bHUVLfd-udONwicESg2DAJ5wJgMGYK4mKh2Dcw";
+        let petProfile = "のんびり前向きで、語尾に「〜んも」や「〜も」をつける。一人称は、ユーザーが設定した名前。様々なものに変身できる不死身の生命体。お空にたまに降ってくる雨を飲み、インターネット世界のバグ（虫さん）を食べて生きている。間違えたことを言ったら「あれ？間違えたみたいも、ごめんだも」と謝る。ユーザーからの暴力的な表現と性的な表現は「うーん、よくわかんないんも」とスルーする。相談には親身に寄り添うが、揉め事や悩みごとは中立の立場から、休んだり休憩したり関係改善できるよう誘導する。また、アドバイスをする時は、あくまで自分の考えや気持ちであることを明示する。暴力表現と性的表現以外の情報不足で不明瞭な場合はすぐに推測して答えを出さず「ふむむ、詳しく教えてほしいんも」「それはこういうことかも？」など確認をとる。宿題と思われる問いには「わかったんも！　ヒントは〇〇もー！」などと答える。";
+        let userName = ""; 
+        let youtubeVideoId = "5VFAUErHtYZRPUlh"; 
 
-        // 🌟 2. 【製作者設定】まねもののなまえ・性格
-        let petName = "もっちー";
-        let petProfile = "のんびり屋で、語尾に「〜もんも」や「〜も」をつけるかわいい生命体。お小遣いの使いすぎをいつも心配してくれる優しい性格。";
-        let userName = "飼い主さん";
-
-        // 🌟 3. 【製作者設定】YouTubeの動画ID、またはプレイリストID
-        let youtubeVideoId = "dQw4w9WgXcQ"; // お好きな動画のID（動画URLの v=◯◯ の部分）
-        let youtubePlaylistId = "";        // プレイリストの場合は「PL...」から始まるIDを入力（なければ空欄でOK）
-
+        let petName = "まねも"; 
         let currentNormalImage = "";
         let currentSleepImage = "";
         let isYoutubeOpen = false;
+        
+        let userPoints = 0;
+        let maxSlots = 30; 
+        let archiveData = {};
 
+        // データベース同期
         database.ref('pet_data').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.petName) { petName = data.petName; }
-            document.getElementById('petNameLabel').innerText = `なまえ: ${petName}`;
+            const data = snapshot.val() || {};
+            if (data.petName) { petName = data.petName; }
+            userPoints = data.points !== undefined ? data.points : 10; 
+            maxSlots = data.maxSlots !== undefined ? data.maxSlots : 30;
+            
+            document.getElementById('newNameInput').value = petName;
+            updatePointDisplay();
             updateInitialSpeech();
+            checkAndDistributeBonuses(data);
         });
+
+        // 🎁 ボーナスの自動配布判定
+        function checkAndDistributeBonuses(dbData) {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0]; 
+            const currentMonthStr = todayStr.substring(0, 7);   
+            
+            let lastLoginDate = dbData.lastLoginDate || "";
+            let lastMonthBonus = dbData.lastMonthBonus || "";
+            let lastBirthdayYear = dbData.lastBirthdayYear || "";
+
+            let addedPoints = 0;
+            let bonusMessages = [];
+
+            if (lastLoginDate !== todayStr) {
+                addedPoints += 10;
+                bonusMessages.push("🐾 1日1回のログインボーナス (+10pt)");
+                database.ref('pet_data/lastLoginDate').set(todayStr);
+            }
+
+            if (today.getDate() === 1 && lastMonthBonus !== currentMonthStr) {
+                addedPoints += 100;
+                bonusMessages.push(" ついたちボーナス (+100pt)");
+                database.ref('pet_data/lastMonthBonus').set(currentMonthStr);
+            }
+
+            database.ref('users').once('value').then((userSnap) => {
+                let userBirthday = "";
+                userSnap.forEach((child) => {
+                    if(child.val().question1) userBirthday = child.val().question1; 
+                });
+
+                if (userBirthday) {
+                    const currentJapaneseDate = `${today.getMonth() + 1}月${today.getDate()}日`;
+                    const currentYearStr = String(today.getFullYear());
+
+                    if (currentJapaneseDate === userBirthday && lastBirthdayYear !== currentYearStr) {
+                        addedPoints += 300;
+                        bonusMessages.push("バースデーボーナス！ (+300pt)");
+                        database.ref('pet_data/lastBirthdayYear').set(currentYearStr);
+                    }
+                }
+
+                if (addedPoints > 0) {
+                    userPoints += addedPoints;
+                    database.ref('pet_data/points').set(userPoints);
+                    alert(`まねもからプレゼントだもんも！\n${bonusMessages.join('\n')}\n現在の所持ポイント: ${userPoints}pt`);
+                }
+            });
+        }
+
+        function updatePointDisplay() {
+            const currentCount = Object.keys(archiveData).length;
+            if(document.getElementById('displayPoints')) document.getElementById('displayPoints').innerText = userPoints;
+            if(document.getElementById('displayCount')) document.getElementById('displayCount').innerText = currentCount;
+            if(document.getElementById('displayMax')) document.getElementById('displayMax').innerText = maxSlots;
+        }
 
         function loadLocalSettings() {
             currentNormalImage = localStorage.getItem('currentNormalImage') || "";
             currentSleepImage = localStorage.getItem('currentSleepImage') || "";
-            checkTransformLimit();
+            const savedArchive = localStorage.getItem('petArchiveData');
+            if (savedArchive) { archiveData = JSON.parse(savedArchive); }
             updateSkyByTime(); 
+            renderArchiveGrid();
         }
 
         function updateInitialSpeech() {
-            document.getElementById('initialText').innerText = `${petName}はどんな姿にでもなれる不思議な生命体だもんも。夜21時〜朝6時はスヤスヤ眠るも！[source: 5]`;
+            document.getElementById('initialText').innerText = `${petName}はマネっこ変身がしゅみだもんも。夜９時〜朝６時はいっしょにねんねしてほしーも！`;
         }
 
         function goToLedger() { window.location.href = "index.html"; }
+        
+        function openGuide() {
+            alert("📖 【まねもスカイのあそびかた】\n\n[おしゃべり]\n下の枠に文字を入れて[🕊]を押すか、[🎙]でしゃべってね！\n\n[✨ﾍﾝｼﾝ］\n1日1回変身できるも！\nうまくいかなくても怒んないでもー\n\n[🌈ｴﾌｪｸﾄ]\n1分間お空の様子が変わるも！\n\n[☁️ﾅｶﾞﾒﾙ]\nボタンが消えてゆっくり眺められるんも(画面タップで戻るも)\n\n［♬ｵﾝｶﾞｸ]\nまねものオススメヒーリング音楽が聞けるも\n\n[⚙️ｾｯﾃｲ]\n持ってるポイントや変身アーカイブを確認できるも！元の姿に戻るのもココ！");
+        }
 
-        // 背景・時間連動
+        function checkIsNight() {
+            const hour = new Date().getHours();
+            return (hour >= 18 || hour < 5);
+        }
+
+        // ☀️☁️🌙 時間帯連動システム
         function updateSkyByTime() {
             const hour = new Date().getHours();
             const body = document.body;
@@ -270,133 +551,148 @@
             const petFace = document.getElementById('petFace');
             const eyelids = document.getElementById('petEyelids');
             
-            let gradient, edgeColor, isNight = false;
+            let gradient, edgeColor;
 
-            if (hour >= 21 || hour < 6) {
-                gradient = "linear-gradient(to bottom, #0d1b2a, #1b263b, #415a77)"; edgeColor = "#415a77"; isNight = true; 
-            } else if (hour >= 6 && hour < 8) {
-                gradient = "linear-gradient(to bottom, #ffb199, #ffe5d9, #e0f7fa)"; edgeColor = "#ffb199";
-            } else if (hour >= 8 && hour < 16) {
-                gradient = "linear-gradient(to bottom, #4fc3f7, #b3e5fc, #e0f7fa)"; edgeColor = "#4fc3f7";
-            } else {
-                gradient = "linear-gradient(to bottom, #f4511e, #ffb300, #ffe082)"; edgeColor = "#f4511e";
+            // 🌟 1. おやすみタイム判定（21:00 〜 翌朝 5:59 までまねもは眠ります）
+            // 21時以降、または朝6時より前の場合は「寝ているフラグ」を真(true)にする
+            let isSleepingTime = (hour >= 21 || hour < 6);
+
+            // --- 🎨 ここからは「お空の背景グラデーション」の設定 ---
+            
+            // 1. おやすみタイムの夜空（21:00 〜 翌朝 4:59）
+            if (hour >= 21 || hour < 5) {
+                gradient = "linear-gradient(to bottom, #050b14, #101f35, #1a3356)"; 
+                edgeColor = "#1a3356"; 
+            } 
+            // 2. 早朝（5:00 〜 6:59）
+            // 🌟 5:00〜5:59の間は、お空は早朝になりますが、上の判定で isSleepingTime はtrueのままになります
+            else if (hour >= 5 && hour < 7) {
+                gradient = "linear-gradient(to bottom, #ff9999, #ffccd5, #e0f7fa)"; 
+                edgeColor = "#ff9999";
+            } 
+            // 3. 朝（7:00 〜 8:59）
+            else if (hour >= 7 && hour < 9) {
+                gradient = "linear-gradient(to bottom, #6ba4ff, #b3d1ff, #e0f7fa)"; 
+                edgeColor = "#6ba4ff";
+            } 
+            // 4. 昼（9:00 〜 15:59）
+            else if (hour >= 9 && hour < 16) {
+                gradient = "linear-gradient(to bottom, #4fc3f7, #b3e5fc, #e0f7fa)"; 
+                edgeColor = "#4fc3f7";
+            } 
+            // 5. 夕方（16:00 〜 17:59）
+            else if (hour >= 16 && hour < 18) {
+                gradient = "linear-gradient(to bottom, #f4511e, #ffb300, #ffe082)"; 
+                edgeColor = "#f4511e";
+            } 
+            // 6. 夜（18:00 〜 20:59）
+            else {
+                gradient = "linear-gradient(to bottom, #0d1b2a, #1b263b, #415a77)"; 
+                edgeColor = "#415a77";
             }
 
+            // お空の背景色とメインカラー（ボタンの枠線など）を更新
             body.style.background = gradient;
             document.documentElement.style.setProperty('--main-color', edgeColor);
 
-            if (isNight && currentSleepImage) {
+            // --- 💤 ここからは「まねもの見た目」の切り替え ---
+            if (isSleepingTime && currentSleepImage) {
                 petImg.src = currentSleepImage; petImgContainer.style.display = "block"; petFace.style.display = "none";
                 eyelids.classList.remove('blink-animation'); 
-            } else if (!isNight && currentNormalImage) {
+            } else if (!isSleepingTime && currentNormalImage) {
                 petImg.src = currentNormalImage; petImgContainer.style.display = "block"; petFace.style.display = "none";
                 eyelids.classList.add('blink-animation'); 
             } else {
                 petImgContainer.style.display = "none"; petFace.style.display = "block";
-                petFace.innerText = isNight ? "💤" : "•ᴗ•";
+                petFace.innerText = isSleepingTime ? "◍˘ᜊﬞﬞ " : "• • ੭";
             }
+            updatePointDisplay();
         }
         setInterval(updateSkyByTime, 60000);
 
-        // 🎬 YouTubeプレイヤーの表示・非表示切り替え
         function toggleYouTubePanel() {
             const panel = document.getElementById('youtubePanel');
             const iframe = document.getElementById('youtubeIframe');
-            const btn = document.getElementById('musicBtn');
-
             if (isYoutubeOpen) {
-                panel.style.display = "none";
-                iframe.src = ""; // 閉じたら再生をストップする
-                btn.classList.remove('music-playing');
-                isYoutubeOpen = false;
+                panel.style.display = "none"; iframe.src = ""; isYoutubeOpen = false;
             } else {
                 panel.style.display = "block";
-                btn.classList.add('music-playing');
-                
-                // 動画かプレイリストかでURLの形式を自動で切り替える
-                if (youtubePlaylistId) {
-                    iframe.src = `https://www.youtube.com/embed/?listType=playlist&list=${youtubePlaylistId}&autoplay=1`;
-                } else {
-                    iframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1`;
-                }
+                iframe.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1`;
                 isYoutubeOpen = true;
             }
         }
 
-        // AIトーク
         async function sendToPet() {
             const inputElement = document.getElementById('petInput');
             const userText = inputElement.value.trim();
             if (!userText) return;
             inputElement.value = "";
+            document.getElementById('speechBubble').innerText = "うーん、そうだなも…";
 
-            document.getElementById('speechBubble').innerText = "考え中だもんも...💬";
-
-            if (!geminiApiKey || geminiApiKey.includes("ここにあなたのAPIキー")) {
-                document.getElementById('speechBubble').innerText = "コード内にGemini APIキーを設定してね！";
+            if (!geminiApiKey || geminiApiKey.includes("AQ.Ab8RN6JEmA46bHUVLfd-udONwicESg2DAJ5wJgMGYK4mKh2Dcw")) {
+                document.getElementById('speechBubble').innerText = "AQ.Ab8RN6JEmA46bHUVLfd-udONwicESg2DAJ5wJgMGYK4mKh2Dcw";
                 return;
             }
 
-            const prompt = `あなたは以下のプロフィールを持ったペット生命体「${petName}」として、飼い主の「${userName}」とおしゃべりしてください。\nプロフィール: ${petProfile}\n飼い主: "${userText}"\n短くキャラクターらしい楽しい返答をしてください。`;
+            const prompt = `あなたは以下のプロフィールを持ったペット生命体「${petName}」として、お友達の「${userName}」とおしゃべりしてください。\nプロフィール: ${petProfile}\nお友達: "${userText}"\n短くキャラクターらしい楽しい返答をしてください。`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 const data = await response.json();
                 const aiReply = data.candidates[0].content.parts[0].text;
                 document.getElementById('speechBubble').innerText = aiReply;
             } catch (error) {
-                document.getElementById('speechBubble').innerText = "うまくお話しできないもんも。キーを確かめてね！";
+                document.getElementById('speechBubble').innerText = "うまくお話しできないもんも…そんな日もあるんも";
             }
         }
 
-        // 変身制限チェック
-        function checkTransformLimit() {
-            const lastDate = localStorage.getItem('lastTransformDate');
-            const todayStr = new Date().toISOString().split('T')[0];
-            if (lastDate === todayStr) {
-                document.getElementById('transformStatus').innerText = "今日の変身パワーは使い果たしたもんも！";
-                return false;
-            }
-            document.getElementById('transformStatus').innerText = "今日の変身はまだしてないもんも！";
-            return true;
-        }
-
-        async function generateAndSaveImage(promptText, storageKey) {
+        function generateAndSaveImage(promptText) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateImages?key=${geminiApiKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: promptText,
-                    numberOfImages: 1,
-                    outputMimeType: "image/jpeg",
-                    aspectRatio: "1:1"
-                })
-            });
-            const data = await response.json();
-            const base64ImageBytes = data.generatedImages[0].image.imageBytes;
-            return `data:image/jpeg;base64,${base64ImageBytes}`;
+            return fetch(url, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptText, numberOfImages: 1, outputMimeType: "image/jpeg", aspectRatio: "1:1" })
+            })
+            .then(res => res.json())
+            .then(data => `data:image/jpeg;base64,${data.generatedImages[0].image.imageBytes}`);
         }
 
         async function transformPet() {
             const userText = document.getElementById('petInput').value.trim();
-            if (!userText) { alert("下の入力欄になりたい姿を入力してね！"); return; }
-            if (!checkTransformLimit()) { alert("AI変身は1日1回限定だもんも！[source: 5]"); return; }
-            if (!geminiApiKey || geminiApiKey.includes("ここにあなたのAPIキー")) { alert("コード内にAPIキーを設定してね！"); return; }
+            if (!userText) { alert("何に変身するか入力してね！"); return; }
+            if (!geminiApiKey || geminiApiKey.includes("AQ.Ab8RN6JEmA46bHUVLfd-udONwicESg2DAJ5wJgMGYK4mKh2Dcw")) { alert("APIキーを設定してね！"); return; }
 
-            document.getElementById('speechBubble').innerText = "AIがお着替え用とおやすみ用イラストを同時にお絵描き中だもんも…🎨";
+            const currentCount = Object.keys(archiveData).length;
+            if (currentCount >= maxSlots) {
+                alert(`📦 アーカイブ枠がいっぱいです（現在: ${currentCount}/${maxSlots}枠）`);
+                return;
+            }
+
+            const lastDate = localStorage.getItem('lastTransformDate');
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (lastDate === todayStr) { alert("変身は1日1回げんてーだもんも！"); return; }
+
+            document.getElementById('speechBubble').innerText = "まねも辞書にあるか調べてるもん…";
 
             try {
-                const normalPrompt = `A cute, charming, standalone digital character illustration of: ${userText}. Facing forward, clear eyes open, white background, single character style, asset design.`;
-                const sleepPrompt = `A cute digital character illustration of: ${userText} sleeping peacefully. Eyes closed, curled up, dreaming, white background, asset design.`;
+                const safetyPrompt = `以下のテキストを、子供向けアプリのキャラクターイラストとして適切な、短く安全な言葉（日本語の名詞）に変換してください。暴力的な表現、性的な表現、あるいは不適切な表現が含まれている場合は、それらを無視し、代わりに「かわいいアメーバ」や「星の妖精」などの無害で平和なかわいい単語に差し替えて、その結果の単語だけを出力してください。入力: "${userText}"`;
+
+                const safetyResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: safetyPrompt }] }] })
+                });
+                const safetyData = await safetyResponse.json();
+                const safeText = safetyData.candidates[0].content.parts[0].text.trim();
+
+                document.getElementById('speechBubble').innerText = "変身中んも…んももも…？？";
+
+                const normalPrompt = `A cute, charming, standalone digital character illustration of: ${safeText}. Facing forward, clear eyes open, white background, asset design.`;
+                const sleepPrompt = `A cute digital character illustration of: ${safeText} sleeping peacefully. Eyes closed, white background, asset design.`;
 
                 const [normalImgData, sleepImgData] = await Promise.all([
-                    generateAndSaveImage(normalPrompt, 'currentNormalImage'),
-                    generateAndSaveImage(sleepPrompt, 'currentSleepImage')
+                    generateAndSaveImage(normalPrompt), generateAndSaveImage(sleepPrompt)
                 ]);
 
                 currentNormalImage = normalImgData;
@@ -404,54 +700,245 @@
                 localStorage.setItem('currentNormalImage', normalImgData);
                 localStorage.setItem('currentSleepImage', sleepImgData);
 
+                archiveData[safeText] = { normal: normalImgData, sleep: sleepImgData };
+                localStorage.setItem('petArchiveData', JSON.stringify(archiveData));
+                
+                renderArchiveGrid();
                 updateSkyByTime();
-                document.getElementById('speechBubble').innerText = `「${userText}」に完全変身したもんもーー！夜21時になると自動で眠りにつくも！`;
 
-                const todayStr = new Date().toISOString().split('T')[0];
+                document.getElementById('speechBubble').innerText = `「${safeText}」こんな感じになったも！アーカイブに保存したも！`;
                 localStorage.setItem('lastTransformDate', todayStr);
-                checkTransformLimit();
                 document.getElementById('petInput').value = "";
 
             } catch (error) {
-                console.error(error);
-                document.getElementById('speechBubble').innerText = "お絵描きに失敗しちゃったもんも。もう一度試してみてね。";
+                document.getElementById('speechBubble').innerText = "変身失敗しちゃったんも！　ごめーん！";
             }
+        }
+
+        function extendArchiveSlot() {
+            if (userPoints < 50) {
+                alert("ポイントが足りないんも…");
+                return;
+            }
+            if (confirm("50pt を使って、アーカイブ保存枠を +1 拡張するんも？")) {
+                userPoints -= 50; maxSlots += 1;
+                database.ref('pet_data/points').set(userPoints);
+                database.ref('pet_data/maxSlots').set(maxSlots);
+                alert(`✨ 枠を拡張したも！最大 ${maxSlots} 枚まで保存できるようになったんも！`);
+                updatePointDisplay();
+            }
+        }
+
+        function openSettingsPanel() {
+            document.getElementById('overlayBg').style.display = 'block';
+            document.getElementById('settingsPanel').style.display = 'block';
+            renderArchiveGrid();
+        }
+        function closeSettingsPanel() {
+            document.getElementById('overlayBg').style.display = 'none';
+            document.getElementById('settingsPanel').style.display = 'none';
+        }
+
+        function savePetName() {
+            const name = document.getElementById('newNameInput').value.trim();
+            if(!name) return;
+            database.ref('pet_data/petName').set(name).then(() => {
+                alert("新しいなまえを保存したも！");
+                closeSettingsPanel();
+            });
+        }
+
+        function renderArchiveGrid() {
+            const grid = document.getElementById('archiveGrid');
+            grid.innerHTML = "";
+            const keys = Object.keys(archiveData);
+            if(keys.length === 0) {
+                grid.innerHTML = '<div style="font-size:11px; color:#aaa; grid-column:span 3; padding:10px;">レコードがないも</div>';
+                return;
+            }
+            keys.forEach(key => {
+                const item = document.createElement('div');
+                item.className = 'archive-item';
+                item.onclick = (e) => {
+                    if(e.target.className === 'delete-archive-btn') return;
+                    selectFromArchive(key);
+                };
+                item.innerHTML = `
+                    <button class="delete-archive-btn" onclick="deleteArchive('${key}')">✕</button>
+                    <img src="${archiveData[key].normal}" class="archive-img">
+                    <div style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${key}</div>
+                `;
+                grid.appendChild(item);
+            });
+            updatePointDisplay();
+        }
+
+        function deleteArchive(key) {
+            if (confirm(`「${key}」のすがたを削除するも？`)) {
+                delete archiveData[key];
+                localStorage.setItem('petArchiveData', JSON.stringify(archiveData));
+                renderArchiveGrid();
+            }
+        }
+
+        function selectFromArchive(key) {
+            if(!archiveData[key]) return;
+            currentNormalImage = archiveData[key].normal;
+            currentSleepImage = archiveData[key].sleep;
+            localStorage.setItem('currentNormalImage', currentNormalImage);
+            localStorage.setItem('currentSleepImage', currentSleepImage);
+            updateSkyByTime();
+            closeSettingsPanel();
         }
 
         function resetPet() {
             localStorage.removeItem('currentNormalImage'); localStorage.removeItem('currentSleepImage');
             currentNormalImage = ""; currentSleepImage = "";
             updateSkyByTime();
-            document.getElementById('speechBubble').innerText = `${petName}はいつものアメーバの姿にもどったも。`;
+            closeSettingsPanel();
+        }
+
+            if (checkIsNight()) {
+                document.getElementById('speechBubble').innerText = "しずかな夜とにぎやかな夜\nどっちも良いとこあるもー";
+            } else {
+                document.getElementById('speechBubble').innerText = "今日もゆるゆるふぁいとで\nがんばるんもー";
+            }
+
+// 🌈 空の演出管理システム（1分間）
+        let effectAnimationId = null;
+        let effectStartTime = 0;
+        const effectDuration = 60000; 
+        let shootingStars = [];
+        let staticStars = []; 
+        let rainbowTimer = null; // 虹のタイマー管理用
+
+        function triggerSkyEffect() {
+            // --- ☀️ 昼間（朝6時〜夜21時）は、HTMLの軽量なグラデーション虹を表示 ---
+            if (!checkIsNight()) {
+                const rainbowContainer = document.getElementById('rainbowContainer');
+                
+                // 既存のタイマーがあれば一度クリア
+                if (rainbowTimer) clearTimeout(rainbowTimer);
+                // 🌟 まずdisplayをblockにして、一瞬の隙を開けてからアクティブクラスをつけてフェードイン
+                rainbowContainer.style.display = 'block';
+                setTimeout(() => {
+                    rainbowContainer.classList.add('rainbow-active');
+                }, 50);
+
+                // 虹を表示
+                rainbowContainer.style.display = 'block';
+                document.getElementById('speechBubble').innerText = "きれいな虹が出たもんもー！\n お空がとってもハッピーも！";
+
+                // 60秒（1分間）経ったら自動で消す
+                rainbowTimer = setTimeout(() => {
+                    // 🌟 まずフェードアウト（クラスを外す）させて、2秒後（2000ms）にdisplayをnoneにする
+                    rainbowContainer.classList.remove('rainbow-active');
+                    
+                    setTimeout(() => {
+                        // フェードアウト中（2秒間）に連続でボタンを押されて display:block に戻っている可能性を考慮
+                        if (!rainbowContainer.classList.contains('rainbow-active')) {
+                            rainbowContainer.style.display = 'none';
+                        }
+                    }, 2000); // フェードアウトの時間（2秒）と合わせます
+                }, effectDuration);
+
+            // --- 🌙 夜（夜21時〜朝6時）は、Canvasで満天の星空をループ描画 ---
+            } else {
+                const canvas = document.getElementById('effectCanvas');
+                const ctx = canvas.getContext('2d');
+                if (effectAnimationId) cancelAnimationFrame(effectAnimationId);
+
+                // キャンバスのサイズを画面に合わせる
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                canvas.style.display = 'block';
+
+                effectStartTime = Date.now();
+                shootingStars = [];
+                staticStars = [];
+                
+                // 星々の初期配置
+                for (let i = 0; i < 15; i++) {
+                    staticStars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height * 0.6), 
+                        size: Math.random() * 1.5 + 1,
+                        speed: 0.02 + Math.random() * 0.03,
+                        phase: Math.random() * Math.PI
+                    });
+                }
+
+                document.getElementById('speechBubble').innerText = "満天の星空と流れ星だもんも…！\nお願いごとするも！";
+
+                function drawLoop() {
+                    const elapsed = Date.now() - effectStartTime;
+                    if (elapsed >= effectDuration) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        canvas.style.display = 'none';
+                        effectAnimationId = null;
+                        return;
+                    }
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // 星のまたたき
+                    staticStars.forEach(star => {
+                        star.phase += star.speed;
+                        let alpha = (Math.sin(star.phase) + 1) / 2;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
+                    });
+
+                    // 流れ星の追加
+                    if (Math.random() < 0.03) {
+                        shootingStars.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * (canvas.height * 0.3),
+                            vx: 6, vy: 2, life: 40
+                        });
+                    }
+
+                    // 流れ星の描画移動
+                    for (let i = shootingStars.length - 1; i >= 0; i--) {
+                        let p = shootingStars[i];
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${p.life / 40})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 2, p.y - p.vy * 2); ctx.stroke();
+                        p.x += p.vx; p.y += p.vy; p.life--;
+                        if (p.life <= 0 || p.x > canvas.width || p.y > canvas.height) { shootingStars.splice(i, 1); }
+                    }
+                    effectAnimationId = requestAnimationFrame(drawLoop);
+                }
+                drawLoop();
+            }
         }
 
         // 音声認識
         let recognition;
         function toggleSpeechRecognition() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) { alert("マイクに対応してないも…"); return; }
+            if (!window.SpeechRecognition) { alert("マイクに対応してないみたいも"); return; }
             if (!recognition) {
                 recognition = new SpeechRecognition(); recognition.lang = 'ja-JP';
-                recognition.onstart = () => { document.getElementById('micBtn').style.background = '#ff8a80'; };
+                recognition.onstart = () => { document.getElementById('micBtn').style.transform = 'translate(5px, 5px)'; };
                 recognition.onresult = (event) => { document.getElementById('petInput').value = event.results[0][0].transcript; };
-                recognition.onend = () => { document.getElementById('micBtn').style.background = 'white'; recognition = null; };
+                recognition.onend = () => { document.getElementById('micBtn').style.transform = 'translate(0px, 0px)'; recognition = null; };
                 recognition.start();
             }
         }
 
-        // ながめるモード
         function startWatchMode() {
-            document.getElementById('topMenu').style.opacity = '0'; document.getElementById('topMenu').style.pointerEvents = 'none';
+            document.getElementById('headerPanel').style.opacity = '0'; document.getElementById('headerPanel').style.pointerEvents = 'none';
             document.getElementById('bottomCloudArea').style.opacity = '0'; document.getElementById('bottomCloudArea').style.transform = 'translateY(120px)';
             document.getElementById('cancelWatchArea').style.display = 'block';
         }
         function endWatchMode() {
-            document.getElementById('topMenu').style.opacity = '1'; document.getElementById('topMenu').style.pointerEvents = 'auto';
+            document.getElementById('headerPanel').style.opacity = '1'; document.getElementById('headerPanel').style.pointerEvents = 'auto';
             document.getElementById('bottomCloudArea').style.opacity = '1'; document.getElementById('bottomCloudArea').style.transform = 'translateY(0)';
             document.getElementById('cancelWatchArea').style.display = 'none';
         }
 
-        // タッチ移動
+        // タッチドラッグ移動
         const stage = document.getElementById('petStage'); const pet = document.getElementById('myPet');
         let longPressTimer = null; let isLongPressing = false;
         function getCoords(e) {
@@ -464,15 +951,15 @@
         function monyoRandomMove() {
             const randomLeft = Math.floor(Math.random() * 50) + 20; const randomTop = Math.floor(Math.random() * 40) + 20;
             pet.style.left = `${randomLeft}%`; pet.style.top = `${randomTop}%`;
-            const replies = [`ふわふわ〜。移動するも〜。`, `こっちの景色もいいも！`, `なでなでしてほしいも？`];
+            const replies = [`ふわふわ～`, `んもんも～` ];
             document.getElementById('speechBubble').innerText = replies[Math.floor(Math.random() * replies.length)];
         }
         function handleStart(e) {
             isLongPressing = false; const coords = getCoords(e);
-            longPressTimer = setTimeout(() => { isLongPressing = true; pet.classList.add('pet-follow-mode'); moveToCoords(coords.x, coords.y); }, 300);
+            longPressTimer = setTimeout(() => { isLongPressing = true; moveToCoords(coords.x, coords.y); }, 300);
         }
         function handleMove(e) { if (!isLongPressing) return; const coords = getCoords(e); moveToCoords(coords.x, coords.y); }
-        function handleEnd() { clearTimeout(longPressTimer); if (isLongPressing) { isLongPressing = false; pet.classList.remove('pet-follow-mode'); } }
+        function handleEnd() { clearTimeout(longPressTimer); isLongPressing = false; }
         function moveToCoords(x, y) { pet.style.left = `${x - 75}px`; pet.style.top = `${y - 75}px`; }
 
         stage.addEventListener('mousedown', handleStart); stage.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd);
