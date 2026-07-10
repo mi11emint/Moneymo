@@ -139,9 +139,15 @@
             outline: none;
             background-color: rgba(255, 255, 255, 0.15); 
         }
+        
+        .cell-textarea:disabled {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: rgba(0, 0, 0, 0.2);
+            cursor: not-allowed;
+        }
+        
         tr td:nth-child(2) .cell-textarea { text-align: left; padding-left: 6px; }
 
-        /* 日付用のプルダウン */
         .cell-select {
             width: 100%;
             height: 40px;
@@ -162,6 +168,61 @@
             background-color: #ffffff;
         }
 
+        .date-cell-container {
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            gap: 4px;
+        }
+
+        .action-select-container {
+            position: relative;
+            width: 20px;  
+            height: 30px; 
+            flex-shrink: 0; 
+        }
+
+        .action-select-container::before {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--main-color);
+            border-radius: 4px;
+            content: '';
+            pointer-events: none;
+        }
+
+        .action-select-container::after {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 4px;
+            height: 4px;
+            border-bottom: 2px solid #ffffff;
+            border-right: 2px solid #ffffff;
+            content: '';
+            pointer-events: none;
+        }
+
+        .action-select-container select {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: transparent;
+            cursor: pointer;
+            outline: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-select-container select option {
+            color: #333333;
+            background-color: #ffffff;
+        }
+
         /* 行のコントロール */
         .table-controls { display: flex; gap: 12px; margin-bottom: 20px; }
         .action-btn {
@@ -169,7 +230,6 @@
             background-color: var(--main-color); color: white; border-radius: 8px;
             font-size: 13px; font-weight: 500; cursor: pointer;
         }
-        .btn-secondary { background-color: transparent; color: var(--main-color); }
 
         /* てもちのおかねエリア */
         .money-summary-box {
@@ -205,6 +265,47 @@
             padding: 14px; font-size: 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
+
+        /* 🌟 追加：iPhone用画像長押し保存オーバーレイのスタイル */
+        .image-overlay {
+            display: none; /* 最初は隠しておく */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); /* 背景を暗く */
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .image-overlay-info {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-align: center;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .image-overlay img {
+            max-width: 100%;
+            max-height: 75vh;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            /* iPhoneで長押し（メニュー呼び出し）を確実に効かせるための設定 */
+            -webkit-user-select: auto;
+            user-select: auto;
+        }
+
+        .image-overlay-close-tip {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
@@ -220,7 +321,7 @@
                 <button class="icon-btn pet-btn" onclick="goToPetRoom()">⸌⍤⃝⸍</button>
                 <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
             </div>
-            </div>
+        </div>
 
         <div class="current-month-title" id="pageMonthTitle">読み込み中...</div>
 
@@ -247,10 +348,10 @@
             <table class="ledger-table">
                 <thead>
                     <tr>
-                        <th style="width: 18%;">ひにち</th>
-                        <th style="width: 44%;">ことがら</th>
-                        <th style="width: 19%;">はいった</th>
-                        <th style="width: 19%;">つかった</th>
+                        <th style="width: 24%;">ひにち</th>
+                        <th style="width: 40%;">ことがら</th>
+                        <th style="width: 18%;">はいった</th>
+                        <th style="width: 18%;">つかった</th>
                     </tr>
                 </thead>
                 <tbody id="ledgerBody">
@@ -259,8 +360,7 @@
         </div>
 
         <div class="table-controls">
-            <button class="action-btn btn-secondary" onclick="deleteRow()">行をけす</button>
-            <button class="action-btn" onclick="addRowAndSaveWithToday()">行をたす</button>
+            <button class="action-btn" onclick="addRowAndSaveWithToday()">いちばん下に新しい行をたす ＋</button>
         </div>
 
         <div class="money-summary-box">
@@ -269,6 +369,12 @@
         </div>
 
         <button class="share-btn" id="shareBtn" onclick="shareAsImage()">ほごしゃに共有 ✉️</button>
+    </div>
+
+    <div id="imageOverlay" class="image-overlay" onclick="closeOverlay()">
+        <div class="image-overlay-info">画像を長押しして「写真に保存」してね！📸</div>
+        <img id="generatedImage" src="" alt="お小遣い帳画像" onclick="event.stopPropagation();">
+        <div class="image-overlay-close-tip">まわりの暗いところをタップすると戻るよ</div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -294,7 +400,7 @@
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth() + 1;
-        const currentDay = today.getDate(); // 今日の日付（数字）
+        const currentDay = today.getDate(); 
         const monthPath = `${currentYear}-${currentMonth}`;
 
         function saveDesignSettings(key, value) { localStorage.setItem(key, value); }
@@ -379,132 +485,188 @@
             }
         }
 
-        // 「行をたす」ボタン用：今日の日付で追加して保存
         function addRowAndSaveWithToday() {
             addRow(currentDay, "", "", "");
             saveLedgerData();
         }
 
-        function addRow(date = "1", content = "", income = "", expense = "") {
+        function addRow(date = "1", content = "", income = "", expense = "", targetIndex = -1) {
             const tbody = document.getElementById('ledgerBody');
-            const row = tbody.insertRow();
+            const row = (targetIndex >= 0) ? tbody.insertRow(targetIndex) : tbody.insertRow();
             
             let optionsHtml = "";
             for (let d = 1; d <= 31; d++) {
-                // セレクトボックスの中身に「日」を付け、保存時は数字だけにする
                 optionsHtml += `<option value="${d}" ${String(date) === String(d) ? 'selected' : ''}>${d}日</option>`;
             }
 
             row.innerHTML = `
                 <td>
-                    <select class="cell-select" onchange="saveLedgerData()">
-                        ${optionsHtml}
-                    </select>
+                    <div class="date-cell-container">
+                        <div class="action-select-container">
+                            <select onchange="handleRowAction(this)">
+                                <option value="" selected disabled></option>
+                                <option value="insert">下に一行足す</option>
+                                <option value="delete">この行を削除</option>
+                            </select>
+                        </div>
+                        <select class="cell-select" onchange="saveLedgerData()">
+                            ${optionsHtml}
+                        </select>
+                    </div>
                 </td>
                 <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); saveLedgerData()">${content}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${income}</textarea></td>
-                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); calculateTotal(); saveLedgerData()" placeholder="0">${expense}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); handleInputLock(this); calculateTotal(); saveLedgerData()" placeholder="0">${income}</textarea></td>
+                <td><textarea class="cell-textarea" rows="1" oninput="autoResize(this); handleInputLock(this); calculateTotal(); saveLedgerData()" placeholder="0">${expense}</textarea></td>
             `;
             
             row.querySelectorAll('textarea').forEach(textarea => autoResize(textarea));
-        }
-
-        function deleteRow() {
-            const tbody = document.getElementById('ledgerBody');
-            if (tbody.rows.length > 0) {
-                tbody.deleteRow(tbody.rows.length - 1);
-                calculateTotal(); 
-                saveLedgerData();
+            
+            const textareas = row.querySelectorAll('textarea');
+            if (textareas.length >= 3) {
+                if (textareas[1].value.trim() !== "") textareas[2].disabled = true;
+                if (textareas[2].value.trim() !== "") textareas[1].disabled = true;
             }
         }
 
-function saveLedgerData() {
-    if (!currentUserId) return;
-    const tbody = document.getElementById('ledgerBody');
-    const ledgerRows = [];
-    for (let i = 0; i < tbody.rows.length; i++) {
-        const select = tbody.rows[i].querySelector('select');
-        const textareas = tbody.rows[i].querySelectorAll('textarea');
-        if (select && textareas.length >= 3) {
-            ledgerRows.push({
-                date: select.value,
-                content: textareas[0].value,
-                income: textareas[1].value,
-                expense: textareas[2].value
-            });
-        }
-    }
-    // 配列が空の場合でも、空のオブジェクトとして保存されないように明示的に保存
-    database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
-}
+        function handleInputLock(textarea) {
+            const row = textarea.closest('tr');
+            const textareas = row.querySelectorAll('textarea');
+            const incomeField = textareas[1];
+            const expenseField = textareas[2];
 
-function loadLedgerData() {
-    if (!currentUserId) return;
-    database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
-        const data = snapshot.val();
-        
-        // 🌟 修正ポイント: 配列でもオブジェクトでも、強制的に配列に変換する
-        let rowsArray = [];
-        if (data && data.rows) {
-            rowsArray = Array.isArray(data.rows) ? data.rows : Object.values(data.rows);
+            if (textarea === incomeField) {
+                expenseField.disabled = (incomeField.value.trim() !== "");
+            } else if (textarea === expenseField) {
+                incomeField.disabled = (expenseField.value.trim() !== "");
+            }
         }
-        
-        // 変換した配列の長さでデータが存在するかチェック
-        if (rowsArray.length > 0) {
+
+        function handleRowAction(selectElement) {
+            const row = selectElement.closest('tr');
             const tbody = document.getElementById('ledgerBody');
-            tbody.innerHTML = ""; // 初期で作った3行をクリア
-            rowsArray.forEach(item => { 
-                addRow(item.date || "1", item.content || "", item.income || "", item.expense || ""); 
-            });
-            calculateTotal();
-        } else {
-            // まだ今月のデータがない場合は、前月のデータをチェックして「前月くりこし」の金額を1行目に適用する
-            let lastYear = currentYear;
-            let lastMonth = currentMonth - 1;
-            if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
-            const lastMonthPath = `${lastYear}-${lastMonth}`;
+            const rowIndex = row.rowIndex - 1; 
+            const action = selectElement.value;
 
-            database.ref(`ledger_data/${currentUserId}/months/${lastMonthPath}`).once('value').then((lastSnapshot) => {
-                const lastData = lastSnapshot.val();
-                let carryOverMoney = 0;
+            selectElement.value = "";
 
-                if (lastData && lastData.rows) {
-                    const lastRowsArray = Array.isArray(lastData.rows) ? lastData.rows : Object.values(lastData.rows);
-                    let totalIncome = 0;
-                    let totalExpense = 0;
-                    lastRowsArray.forEach(item => {
-                        totalIncome += parseFloat(item.income) || 0;
-                        totalExpense += parseFloat(item.expense) || 0;
-                    });
-                    carryOverMoney = totalIncome - totalExpense;
+            if (action === "insert") {
+                addRow(currentDay, "", "", "", rowIndex + 1);
+                saveLedgerData();
+            } else if (action === "delete") {
+                const isConfirmed = confirm("本当にこの行を削除してもいいですか？");
+                if (isConfirmed) {
+                    tbody.deleteRow(rowIndex);
+                    calculateTotal();
+                    saveLedgerData();
                 }
+            }
+        }
 
-                // 初期3行の1行目に金額を反映させる
-                const tbody = document.getElementById('ledgerBody');
-                tbody.innerHTML = "";
-                addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "0", "");
-                addRow("1", "", "", "");
-                addRow("1", "", "", "");
+        function saveLedgerData() {
+            if (!currentUserId) return;
+            const tbody = document.getElementById('ledgerBody');
+            const ledgerRows = [];
+            for (let i = 0; i < tbody.rows.length; i++) {
+                const select = tbody.rows[i].querySelectorAll('select')[1]; 
+                const textareas = tbody.rows[i].querySelectorAll('textarea');
+                if (select && textareas.length >= 3) {
+                    ledgerRows.push({
+                        date: select.value,
+                        content: textareas[0].value,
+                        income: textareas[1].value,
+                        expense: textareas[2].value
+                    });
+                }
+            }
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).set({ rows: ledgerRows });
+        }
+
+        function loadLedgerData() {
+            if (!currentUserId) return;
+            database.ref(`ledger_data/${currentUserId}/months/${monthPath}`).once('value').then((snapshot) => {
+                const data = snapshot.val();
                 
-                calculateTotal();
-                saveLedgerData(); // Firebaseへ初期状態を保存
+                let rowsArray = [];
+                if (data && data.rows) {
+                    rowsArray = Array.isArray(data.rows) ? data.rows : Object.values(data.rows);
+                }
+                
+                if (rowsArray.length > 0) {
+                    const tbody = document.getElementById('ledgerBody');
+                    tbody.innerHTML = ""; 
+                    rowsArray.forEach(item => { 
+                        addRow(item.date || "1", item.content || "", item.income || "", item.expense || ""); 
+                    });
+                    calculateTotal();
+                } else {
+                    let lastYear = currentYear;
+                    let lastMonth = currentMonth - 1;
+                    if (lastMonth < 1) { lastMonth = 12; lastYear -= 1; }
+                    const lastMonthPath = `${lastYear}-${lastMonth}`;
+
+                    database.ref(`ledger_data/${currentUserId}/months/${lastMonthPath}`).once('value').then((lastSnapshot) => {
+                        const lastData = lastSnapshot.val();
+                        let carryOverMoney = 0;
+
+                        if (lastData && lastData.rows) {
+                            const lastRowsArray = Array.isArray(lastData.rows) ? lastData.rows : Object.values(lastData.rows);
+                            let totalIncome = 0;
+                            let totalExpense = 0;
+                            lastRowsArray.forEach(item => {
+                                totalIncome += parseFloat(item.income) || 0;
+                                totalExpense += parseFloat(item.expense) || 0;
+                            });
+                            carryOverMoney = totalIncome - totalExpense;
+                        }
+
+                        const tbody = document.getElementById('ledgerBody');
+                        tbody.innerHTML = "";
+                        addRow("1", "前月くりこし", carryOverMoney > 0 ? carryOverMoney : "0", "");
+                        addRow("1", "", "", "");
+                        addRow("1", "", "", "");
+                        
+                        calculateTotal();
+                        saveLedgerData(); 
+                    });
+                }
+            }).catch((error) => {
+                console.error("データの読み込みに失敗しました:", error);
             });
         }
-    }).catch((error) => {
-        console.error("データの読み込みに失敗しました:", error);
-    });
-}
 
+        // 🌟 修正：端末の種類を判別し、iPhoneなら長押し用画面を出し、PCやAndroidならそのまま自動保存
         function shareAsImage() {
             document.getElementById('controlPanel').style.display = 'none';
             const target = document.getElementById('ledgerContainer');
+            
             html2canvas(target, { backgroundColor: null, scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `${currentYear}年${currentMonth}月のおこづかい帳.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                alert('おこづかい帳を保存しました！');
+                const dataUrl = canvas.toDataURL("image/png");
+                
+                // 📱 iOS（iPhone / iPad）かどうかの判定用
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                if (isIOS) {
+                    // --- iPhoneの場合：画像画面を画面いっぱいに表示して長押しさせる ---
+                    const overlay = document.getElementById('imageOverlay');
+                    const imgElement = document.getElementById('generatedImage');
+                    
+                    imgElement.src = dataUrl; // 生成した画像をセット
+                    overlay.style.display = 'flex'; // オーバーレイを表示
+                } else {
+                    // --- PCやAndroidの場合：今まで通り自動でダウンロード ---
+                    const link = document.createElement('a');
+                    link.download = `${currentYear}年${currentMonth}月のおこづかい帳.png`;
+                    link.href = dataUrl;
+                    link.click();
+                    alert('おこづかい帳を保存しました！');
+                }
             });
+        }
+
+        // 🌟 追加：オーバーレイ画面を閉じるための処理
+        function closeOverlay() {
+            document.getElementById('imageOverlay').style.display = 'none';
         }
 
         function goToPetRoom() { window.location.href = "pet.html"; }
@@ -514,7 +676,6 @@ function loadLedgerData() {
             loadDesignSettings();
             document.getElementById('pageMonthTitle').innerText = `${currentYear}年 ${currentMonth}月` ;
             
-            // 🌟【超重要】Firebaseの通信を待たずに、開いた瞬間にまずは真っ白な3行を画面に絶対に作る！
             const tbody = document.getElementById('ledgerBody');
             tbody.innerHTML = "";
             addRow("1", "", "", "");
@@ -525,7 +686,7 @@ function loadLedgerData() {
             auth.onAuthStateChanged((user) => {
                 if (user) {
                     currentUserId = user.uid;
-                    loadLedgerData(); // ログインできたらFirebaseのデータを上書きで見に行く
+                    loadLedgerData(); 
                 } else {
                     alert('ログインしてね！🔑');
                     window.location.href = "login.html";
