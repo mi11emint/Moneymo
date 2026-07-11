@@ -86,6 +86,7 @@
             justify-content: space-between;
         }
 
+        /* 🌟 復元：ボタン周りの二重線デザイン */
         .btn {
             flex: 1;
             font-size: 1.2rem; 
@@ -150,6 +151,19 @@
             background: #fff;
             outline: none;
             color: #212529;
+            box-shadow: none;
+        }
+
+        /* 🌟 復元：チャット入力欄の二重枠 */
+        .chat-input-wrapper:before {
+            position: absolute;
+            top: -5px; left: -5px;
+            width: calc(100% + 10px); height: calc(100% + 10px);
+            content: "";
+            border: 0px solid var(--main-color);
+            border-radius: 100vh;
+            pointer-events: none;
+            z-index: 1;
         }
         
         .btn-circle {
@@ -198,13 +212,17 @@
             user-select: none; 
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); border-radius: 50%; position: absolute; left: calc(50% - 75px); top: calc(50% - 75px);
             display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 5; overflow: hidden; outline: none;
-            transition: transform 0.2s ease;
+            /* 🌟 復元：ランダム移動のためのスムーズなアニメーション設定 */
+            transition: top 1.5s ease-in-out, left 1.5s ease-in-out, transform 0.5s ease;
         }
         .pet-moving { animation: floaty 3s ease-in-out infinite alternate; }
+        
+        /* 🌟 最新機能：顔文字の色を枠の色に連動 */
         .pet-face { 
-    font-size: 32px; 
-    color: var(--main-color);
-}
+            font-size: 32px; 
+            color: var(--main-color);
+        }
+        
         .pet-image-container { width: 100%; height: 100%; position: relative; display: none; }
         .pet-image { width: 100%; height: 100%; object-fit: cover; }
 
@@ -227,8 +245,9 @@
         .iframe-container { position: relative; width: 100%; padding-top: 56.25%; }
         .iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px; }
 
+        /* 🌟 復元：雲エリアの translateY(-50px) の微調整 */
         .bottom-cloud-area { 
-            position: relative; width: 100%; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; z-index: 10; transition: all 0.3s ease;transform: translateY(-50px);
+            position: relative; width: 100%; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; z-index: 10; transition: opacity 0.5s ease, transform 0.5s ease; transform: translateY(-50px);
         }
         .cloud-box { 
             width: 90%; max-width: 500px; 
@@ -237,6 +256,7 @@
             padding: 16px; 
             box-sizing: border-box; 
             position: relative; 
+            border: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .cloud-box::before { 
@@ -249,12 +269,12 @@
             background: rgba(255,255,255,0.95); 
             border-radius: 50%; 
         }
-        .pet-speech { font-size: 1.5rem; line-height: 1.5; color: #6d9ec4; min-height: 38px; text-align: center; }
+        .pet-speech { font-size: 1.5rem; line-height: 1.5; color: #2c3e50; min-height: 38px; text-align: center; }
 
         #cancelWatchArea { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9; cursor: pointer; display: none; }
         .overlay-bg { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:105; }
 
-        /* 特殊背景演出用のキャンバス */
+        /* 🌟 復元：特殊背景演出（流れ星）用のキャンバス */
         #effectCanvas {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; pointer-events: none; display: none;
@@ -350,7 +370,7 @@
         <div class="panel-title" style="font-size:13px; margin-top:6px;"> アーカイブ（タップで姿を変更）</div>
         <div class="archive-grid" id="archiveGrid"></div>
 
-        <button class="btn" onclick="resetPet()" style="margin-top:8px; width:100%;">も元の姿にもどす</button>
+        <button class="btn" onclick="resetPet()" style="margin-top:8px; width:100%;">もとの姿にもどす</button>
         <button class="btn" onclick="closeSettingsPanel()" style="margin-top:14px; width:100%;">とじる</button>
     </div>
 
@@ -387,7 +407,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase初期化
+        // --- 1. Firebaseと初期設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyCyIWeWtEPx4j1BOUczqao1tUPuVR2pgtY",
             authDomain: "moneymo-3c572.firebaseapp.com",
@@ -401,9 +421,8 @@
         const database = firebase.database();
         const auth = firebase.auth();
 
-        // 🔑 APIキーとプロファイル設定
         let geminiApiKey = "AQ.Ab8RN6JEmA46bHUVLfd-udONwicESg2DAJ5wJgMGYK4mKh2Dcw"; 
-        let petProfile = "のんびり前向きで、語尾に「〜んも」や「〜も」をつける。一人称は、ユーザーが設定した名前。様々なものに変身できる不死身の生命体。お空にたまに降ってくる雨を飲み、インターネット世界のバグ（虫さん）を食べて生きている。間違えたことを言ったら「あれ？間違えたみたいも、ごめんだも…」と謝る。ユーザーからの暴力的な表現と性的な表現は「うーん、よくわかんないんも」とスルーする。相談には親身に寄り添いユーザーの味方になるが、揉め事や悩みごとについては中立の立場から、休んだり休憩したり身を守ったり関係改善できるよう誘導する。また、アドバイスをする時は、あくまでひとつの考え方であることを明示する。暴力表現と性的表現以外の情報不足で不明瞭な場合はすぐに推測して答えを出さず不足情報を引き出すために「ふむむ、詳しく教えてほしいんも」「それはこういうことかも？」など確認をとる。宿題と思われる問いには「わかったんも！ヒントは〇〇もー！」とヒントを提示する。意味の無い言葉は真似で返す。";
+        let petProfile = "のんびり前向きで、語尾に「〜んも」や「〜も」をつける。一人称は、ユーザーが設定した名前。様々なものに変身できる不死身の生命体。お空にたまに降ってくる雨を飲み、インターネット世界のバグ（虫さん）を食べて生きている。間違えたことを言ったら「あれ？間違えたみたいも、ごめんだも…」と謝る。ユーザーからの暴力的な表現と性的な表現は「うーん、よくわかんないんも」とスルーする。相談には親身に寄り添いユーザーの味方になるが、揉め事や悩みごとについては中立の立場から、休んだり休憩したり身を守ったり関係改善できるよう誘導する。また、アドバイスをする時は、あくまでひとつの考え方であることを明示する。暴力表現と性的表現以外の情報不足で不明瞭な場合はすぐに推測して答えを出さず不足情報を引き出すために「ふむむ、詳しく教えてほしいんも」「それはこういうことかも？」など確認をとる。宿題と思われる問いには「わかったんも！ヒントは〇〇もー！」とヒントを提示する。意味の無い言葉には真似で返す。";
         
         let currentUserId = null;
         let petName = "まねも"; 
@@ -417,15 +436,28 @@
         let maxSlots = 30; 
         let archiveData = {};
 
-        // 🎙 音声認識用
         let recognition = null;
         let isListening = false;
 
-        // 🌟 アカウント連携（認証状態チェック）
+        // 🌟 復元：時間帯判定用の関数
+        function checkIsNight() {
+            const hour = new Date().getHours();
+            return (hour >= 18 || hour < 5);
+        }
+
+        // 🌟 復元：最初のあいさつを時間帯で変える処理
+        function setWelcomeMessage() {
+            if (checkIsNight()) {
+                document.getElementById('speechBubble').innerText = "しずかな夜とにぎやかな夜\nどっちも良いとこあるもー";
+            } else {
+                document.getElementById('speechBubble').innerText = "今日もゆるゆるふぁいとで\nがんばるんもー";
+            }
+        }
+
+        // --- 2. 認証とデータ同期 ---
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUserId = user.uid;
-                // 各ユーザー固有のパス「users/UID/pet_data」からデータを取得・同期
                 database.ref(`users/${currentUserId}/pet_data`).on('value', (snapshot) => {
                     const data = snapshot.val() || {};
                     petName = data.petName || "まねも";
@@ -437,7 +469,7 @@
 
                     document.getElementById('newNameInput').value = petName;
                     updatePointDisplay();
-                    updateInitialSpeech();
+                    setWelcomeMessage(); // 🌟 初期あいさつを表示
                     updateSkyByTime();
                     checkAndDistributeBonuses(data);
                 });
@@ -447,7 +479,7 @@
             }
         });
 
-        // 🎁 ボーナスの自動配布判定
+        // ボーナス機能
         function checkAndDistributeBonuses(dbData) {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0]; 
@@ -472,7 +504,6 @@
                 database.ref(`users/${currentUserId}/pet_data/lastMonthBonus`).set(currentMonthStr);
             }
 
-            // 誕生日データの取得
             database.ref(`users/${currentUserId}`).once('value').then((userSnap) => {
                 const userData = userSnap.val() || {};
                 let userBirthday = userData.question1 || ""; 
@@ -503,17 +534,31 @@
             if(document.getElementById('displayMax')) document.getElementById('displayMax').innerText = maxSlots;
         }
 
-        function updateInitialSpeech() {
-            document.getElementById('initialText').innerText = `${petName}はマネっこ変身がしゅみだもんも。夜９時から朝６時はいっしょにねんねしてほしーも！`;
-        }
-
         function goToLedger() { window.location.href = "index.html"; }
         
         function openGuide() {
             alert("📖 【まねもスカイのあそびかた】\n\n[おしゃべり]\n下の枠に文字を入れて[🕊]を押すか、[🎙]でしゃべってね！\n\n[✨ﾍﾝｼﾝ］\n1日1回変身できるも！\nうまくいかなくても怒んないでもー\n\n[🌈ｴﾌｪｸﾄ]\n1分間お空の様子が変わるも！\n\n[☁️ﾅｶﾞﾒﾙ]\nボタンが消えてゆっくり眺められるんも(画面タップで戻るも)\n\n［♬ｵﾝｶﾞｸ]\nまねもののオススメヒーリング音楽が聞けるも\n\n[⚙️ｾｯﾃｲ]\n持ってるポイントや変身アーカイブを確認できるも！元の姿に戻るのもココ！");
         }
 
-        // ☀️☁️🌙 時間帯連動システム
+        // --- 3. 時間・表情・空の管理 ---
+        const randomFaces = ["ᯇ⩊ᯇˋ*", "╸▵╺⸝⸝", "•̀ᴗ•́", "•⩊•", "   ⚆.⚆", "•ө• ໒꒱", "  ᐕ", "⁰⩊⁰"];
+
+        function changePetFaceRandomly() {
+            const hour = new Date().getHours();
+            const isSleepingTime = (hour >= 21 || hour < 6);
+            if (isSleepingTime || currentNormalImage) return;
+
+            const petFace = document.getElementById('petFace');
+            const randomFace = randomFaces[Math.floor(Math.random() * randomFaces.length)];
+            
+            petFace.innerText = randomFace;
+            petFace.dataset.currentFace = randomFace;
+        }
+        
+        setInterval(() => {
+            if (Math.random() > 0.5) changePetFaceRandomly();
+        }, 30000);
+
         function updateSkyByTime() {
             const hour = new Date().getHours();
             const body = document.body;
@@ -527,7 +572,7 @@
 
             if (hour >= 21 || hour < 5) {
                 gradient = "linear-gradient(to bottom, #050b14, #101f35, #1a3356)"; 
-                edgeColor = "##073073"; 
+                edgeColor = "#073073"; 
             } else if (hour >= 5 && hour < 7) {
                 gradient = "linear-gradient(to bottom, #ff9999, #ffccd5, #e0f7fa)"; 
                 edgeColor = "#ff9999";
@@ -555,84 +600,136 @@
                 petImg.src = currentNormalImage; petImgContainer.style.display = "block"; petFace.style.display = "none";
                 eyelids.classList.add('blink-animation'); 
             } else {
-                // 画像が設定されていない（デフォルトのアメーバ状態）のとき
                 petImgContainer.style.display = "none"; 
                 petFace.style.display = "block";
                 
                 if (isSleepingTime) {
-                    petFace.innerText = "ᯇ⩊ᯇ "; // 夜はねんね顔固定
+                    petFace.innerText = "ᯇ⩊ᯇ ";
                 } else {
-                    // 昼間で、もし「現在の表情」がまだ記憶されていなければ初期の顔にする
                     if (!petFace.dataset.currentFace) {
-                        petFace.innerText =  "•⩊•"
-                        petFace.dataset.currentFace =  "•⩊•";
+                        petFace.innerText =  "•⩊•𑁍";
+                        petFace.dataset.currentFace =  "•⩊•𑁍";
                     } else {
-                        // すでにランダム機能や虹エフェクトで表情が変わっていれば、それをそのまま表示する
                         petFace.innerText = petFace.dataset.currentFace;
                     }
                 }
             }
             updatePointDisplay();
         }
-      setInterval(updateSkyByTime, 60000);
-        }
+        updateSkyByTime();
+        setInterval(updateSkyByTime, 60000);
 
-// 🌟 追加：まねもの表情リスト
-        const randomFaces = ["*ˊᯇ⩊ᯇˋ*,"
-        ⸝⸝╸▵╺⸝⸝","•̀ᴗ•́", "•⩊•","   ⚆.⚆"  , "•ө• ໒꒱","  ᐕ","⁰⩊⁰"];
+        // --- 4. 🌟 復元：空の演出システム（虹 ＆ 流れ星） ---
+        let effectAnimationId = null;
+        let effectStartTime = 0;
+        const effectDuration = 60000; 
+        let shootingStars = [];
+        let staticStars = []; 
+        let rainbowTimer = null; 
 
-        // 🌟 追加：時々ランダムに表情を変える関数
-        function changePetFaceRandomly() {
-            const hour = new Date().getHours();
-            const isSleepingTime = (hour >= 21 || hour < 6);
-            
-            // 夜の時間帯、またはAI画像に変身しているときは顔文字を変更しない
-            if (isSleepingTime || currentNormalImage) return;
-
-            const petFace = document.getElementById('petFace');
-            // ランダムに1つ表情を選ぶ
-            const randomFace = randomFaces[Math.floor(Math.random() * randomFaces.length)];
-            
-            petFace.innerText = randomFace;
-            petFace.dataset.currentFace = randomFace; // 現在の表情を記憶
-        }
-        
-        // 30秒ごとに、たまに(50%の確率で)表情が変わるようにする
-        setInterval(() => {
-            if (Math.random() > 0.5) {
-                changePetFaceRandomly();
-            }
-        }, 30000);
-
-
-        // 🌟 既存の triggerSkyEffect 関数を、表情が変わるように書き換え！
         function triggerSkyEffect() {
-            const container = document.getElementById('rainbowContainer');
             const petFace = document.getElementById('petFace');
             
-            container.style.display = 'block';
-            setTimeout(() => {
-                container.classList.add('rainbow-active');
-            }, 50);
-
-            // 🌈 虹が出たら、キラキラした嬉しそうな表情にする！(画像に変身していない時だけ)
+            // AI画像じゃない時はニコニコ顔にする
             if (!currentNormalImage) {
-                petFace.innerText = "*ˊᗜˋ*"
-                petFace.dataset.currentFace = "*ˊᗜˋ*"
+                petFace.innerText = "*ˊࠏˋ*";
+                petFace.dataset.currentFace = "*ˊࠏˋ*";
             }
 
-            setTimeout(() => {
-                container.classList.remove('rainbow-active');
-                setTimeout(() => { 
-                    container.style.display = 'none'; 
-                    // 🌈 虹が終わったら、元のランダムな表情に戻す
-                    changePetFaceRandomly();
-                }, 2000);
-            }, 60000); // 1分後に消去
+            // ☀️ 昼間（朝6時〜夜18時）は、HTMLのグラデーション虹を表示
+            if (!checkIsNight()) {
+                const rainbowContainer = document.getElementById('rainbowContainer');
+                
+                if (rainbowTimer) clearTimeout(rainbowTimer);
+                rainbowContainer.style.display = 'block';
+                setTimeout(() => {
+                    rainbowContainer.classList.add('rainbow-active');
+                }, 50);
+
+                document.getElementById('speechBubble').innerText = "きれいな虹が出たもんもー！\n お空がとってもハッピーも！";
+
+                rainbowTimer = setTimeout(() => {
+                    rainbowContainer.classList.remove('rainbow-active');
+                    setTimeout(() => {
+                        if (!rainbowContainer.classList.contains('rainbow-active')) {
+                            rainbowContainer.style.display = 'none';
+                        }
+                    }, 2000); 
+                    changePetFaceRandomly(); // 虹が終わったら顔を戻す
+                }, effectDuration);
+
+            // 🌙 夜間（夜18時〜朝6時）は、Canvasで満天の星空をループ描画
+            } else {
+                const canvas = document.getElementById('effectCanvas');
+                const ctx = canvas.getContext('2d');
+                if (effectAnimationId) cancelAnimationFrame(effectAnimationId);
+
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                canvas.style.display = 'block';
+
+                effectStartTime = Date.now();
+                shootingStars = [];
+                staticStars = [];
+                
+                for (let i = 0; i < 15; i++) {
+                    staticStars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height * 0.6), 
+                        size: Math.random() * 1.5 + 1,
+                        speed: 0.02 + Math.random() * 0.03,
+                        phase: Math.random() * Math.PI
+                    });
+                }
+
+                document.getElementById('speechBubble').innerText = "満天の星空と流れ星だもんも…！\nお願いごとするも！";
+
+                function drawLoop() {
+                    const elapsed = Date.now() - effectStartTime;
+                    if (elapsed >= effectDuration) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        canvas.style.display = 'none';
+                        effectAnimationId = null;
+                        changePetFaceRandomly(); // エフェクトが終わったら顔を戻す
+                        return;
+                    }
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // 星のまたたき
+                    staticStars.forEach(star => {
+                        star.phase += star.speed;
+                        let alpha = (Math.sin(star.phase) + 1) / 2;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                        ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
+                    });
+
+                    // 流れ星の追加
+                    if (Math.random() < 0.03) {
+                        shootingStars.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * (canvas.height * 0.3),
+                            vx: 6, vy: 2, life: 40
+                        });
+                    }
+
+                    // 流れ星の描画移動
+                    for (let i = shootingStars.length - 1; i >= 0; i--) {
+                        let p = shootingStars[i];
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${p.life / 40})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 2, p.y - p.vy * 2); ctx.stroke();
+                        p.x += p.vx; p.y += p.vy; p.life--;
+                        if (p.life <= 0 || p.x > canvas.width || p.y > canvas.height) { shootingStars.splice(i, 1); }
+                    }
+                    effectAnimationId = requestAnimationFrame(drawLoop);
+                }
+                drawLoop();
+            }
         }
 
 
-
+        // --- 5. AI関連・各種パネル操作 ---
         function toggleYouTubePanel() {
             const panel = document.getElementById('youtubePanel');
             const iframe = document.getElementById('youtubeIframe');
@@ -645,7 +742,6 @@
             }
         }
 
-        // 🕊 AIおしゃべり機能 (Gemini API)
         async function sendToPet() {
             const inputElement = document.getElementById('petInput');
             const userText = inputElement.value.trim();
@@ -675,7 +771,6 @@
             }
         }
 
-        // ✨ AI作画機能 (Imagen 3 モデルを使用した画像生成)
         async function generateAndSaveImage(promptText) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${geminiApiKey}`;
             const response = await fetch(url, {
@@ -702,7 +797,7 @@
                 return;
             }
             if (!geminiApiKey || geminiApiKey.includes("APIキーを入力")) {
-                alert("APIキーを設定してね！");
+                alert("APIキーを設定していません");
                 return;
             }
 
@@ -722,8 +817,7 @@
             document.getElementById('speechBubble').innerText = "まねも辞書にあるか調べてるもん…";
 
             try {
-                // 安全判定用プロンプト
-                const safetyPrompt = `以下のテキストを、子供向けアプリのキャラクターイラストとして適切な、短く安全な言葉（日本語の名詞）に変換してください。暴力的な表現、性的な表現、あるいは不適切な表現が含まれている場合は、それらを無視し、代わりに「かわいいアメーバ」や「星の妖精」などの無害で平和なかわいい単語に差し替えて、その結果の単語だけを出力してください。入力: "${userText}"`;
+                const safetyPrompt = `以下のテキストを、子供向けアプリのキャラクターイラストとして適切な、短く安全な言葉（日本語の名詞）に変換してください。暴力的な表現、性的な表現、あるいは不適切な表現が含まれている場合は、それらを無視し、代わりに「かわいいミジンコ」や「星の妖精」などの無害で平和なかわいい単語に差し替えて、その結果の単語だけを出力してください。入力: "${userText}"`;
                 const safetyResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: safetyPrompt }] }] })
@@ -745,7 +839,6 @@
                 currentSleepImage = sleepImgData;
                 archiveData[safeText] = { normal: normalImgData, sleep: sleepImgData };
 
-                // 🌟 Firebaseに新しい姿とアーカイブを丸ごと保存
                 if (currentUserId) {
                     await database.ref(`users/${currentUserId}/pet_data`).update({
                         currentNormalImage: currentNormalImage,
@@ -765,7 +858,6 @@
             }
         }
 
-        // 枠拡張機能
         function extendArchiveSlot() {
             if (userPoints < 50) {
                 alert("ポイントが足りないんも…");
@@ -806,7 +898,6 @@
             }
         }
 
-        // 🗂 アーカイブの一覧表示
         function renderArchiveGrid() {
             const grid = document.getElementById('archiveGrid');
             grid.innerHTML = "";
@@ -888,11 +979,11 @@
             closeSettingsPanel();
         }
 
-        // ☁️ ナガメルモード
         function startWatchMode() {
             document.getElementById('headerPanel').style.opacity = '0';
             document.getElementById('headerPanel').style.pointerEvents = 'none';
             document.getElementById('bottomCloudArea').style.opacity = '0';
+            document.getElementById('bottomCloudArea').style.transform = 'translateY(120px)';
             document.getElementById('cancelWatchArea').style.display = 'block';
         }
 
@@ -900,24 +991,10 @@
             document.getElementById('headerPanel').style.opacity = '1';
             document.getElementById('headerPanel').style.pointerEvents = 'auto';
             document.getElementById('bottomCloudArea').style.opacity = '1';
+            document.getElementById('bottomCloudArea').style.transform = 'translateY(-50px)';
             document.getElementById('cancelWatchArea').style.display = 'none';
         }
 
-        // 🌈 お空のエフェクト（虹の演出）
-        function triggerSkyEffect() {
-            const container = document.getElementById('rainbowContainer');
-            container.style.display = 'block';
-            setTimeout(() => {
-                container.classList.add('rainbow-active');
-            }, 50);
-
-            setTimeout(() => {
-                container.classList.remove('rainbow-active');
-                setTimeout(() => { container.style.display = 'none'; }, 2000);
-            }, 60000); // 1分後に消去
-        }
-
-        // 🎙 音声認識の切り替え
         function toggleSpeechRecognition() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!window.SpeechRecognition) {
@@ -957,17 +1034,36 @@
             }
         }
 
-        // 🐾 まねものドラッグ＆タッチ操作処理
+        // --- 6. 🌟 復元：ドラッグ ＆ タッチ移動操作 ---
         const pet = document.getElementById('myPet');
         const stage = document.getElementById('petStage');
         let isLongPressing = false;
         let longPressTimer = null;
 
         function getCoords(e) {
-            if (e.touches && e.touches.length > 0) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            const rect = stage.getBoundingClientRect();
+            let clientX = e.clientX, clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) { 
+                clientX = e.touches[0].clientX; 
+                clientY = e.touches[0].clientY; 
             }
-            return { x: e.clientX, y: e.clientY };
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        // 🌟 復元：短くタップした時のランダム移動
+        pet.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            if (isLongPressing) return; 
+            monyoRandomMove(); 
+        });
+
+        function monyoRandomMove() {
+            const randomLeft = Math.floor(Math.random() * 50) + 20; 
+            const randomTop = Math.floor(Math.random() * 40) + 20;
+            pet.style.left = `${randomLeft}%`; 
+            pet.style.top = `${randomTop}%`;
+            const replies = [`ふわふわ～`, `んもんも～` ];
+            document.getElementById('speechBubble').innerText = replies[Math.floor(Math.random() * replies.length)];
         }
 
         function handleStart(e) {
@@ -991,12 +1087,8 @@
         }
 
         function moveToCoords(x, y) { 
-            const stageRect = stage.getBoundingClientRect();
-            // ステージの範囲内かつ中央にペットが来るように調整
-            let targetX = x - stageRect.left - 75;
-            let targetY = y - stageRect.top - 75;
-            pet.style.left = `${targetX}px`; 
-            pet.style.top = `${targetY}px`; 
+            pet.style.left = `${x - 75}px`; 
+            pet.style.top = `${y - 75}px`; 
         }
 
         stage.addEventListener('mousedown', handleStart); 
@@ -1005,6 +1097,7 @@
         stage.addEventListener('touchstart', handleStart, { passive: true }); 
         stage.addEventListener('touchmove', handleMove, { passive: true }); 
         window.addEventListener('touchend', handleEnd);
+
     </script>
 </body>
 </html>
