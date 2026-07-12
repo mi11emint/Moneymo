@@ -222,13 +222,25 @@
             color: #333333;
             background-color: #ffffff;
         }
-
+        
         /* 行のコントロール */
-        .table-controls { display: flex; gap: 12px; margin-bottom: 20px; }
-        .action-btn {
-            flex: 1; padding: 10px; border: 1px solid var(--main-color);
-            background-color: var(--main-color); color: white; border-radius: 8px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
+        .table-controls { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+        }
+        .action-btn, .share-btn {
+            flex: 1; 
+            padding: 12px; /* 高さを揃えるためにパディングを統一 */
+            border: 1px solid var(--main-color);
+            background-color: var(--main-color); 
+            color: white; 
+            border-radius: 8px;
+            font-size: 14px; /* 文字の大きさを統一 */
+            font-weight: bold; 
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-sizing: border-box;
         }
 
         /* てもちのおかねエリア */
@@ -257,13 +269,6 @@
             color: var(--text-color);
             border-bottom: double var(--main-color);
             padding: 0 4px;
-        }
-
-        /* 保護者共有ボタン */
-        .share-btn {
-            background-color: var(--main-color); border: none; color: white; width: 100%;
-            padding: 14px; font-size: 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         /* 🌟 追加：iPhone用画像長押し保存オーバーレイのスタイル */
@@ -314,11 +319,17 @@
         
         <div class="header-row">
             <div class="header-left">
-                <button class="icon-btn" onclick="goToHistoryPage()">📓</button>
-                <h1>おこづかいちょう</h1>
+                
+                <h1>
+                  <div class="money-summary-box">
+            <div class="money-label"> てもちのおかね</div>
+            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
+        </div>
+        </h1>
             </div>
             <div class="header-right">
                 <button class="icon-btn pet-btn" onclick="goToPetRoom()">⸌⍤⃝⸍</button>
+                <button class="icon-btn" onclick="goToHistoryPage()">📓</button>
                 <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
             </div>
         </div>
@@ -350,8 +361,8 @@
                     <tr>
                         <th style="width: 24%;">ひにち</th>
                         <th style="width: 40%;">ことがら</th>
-                        <th style="width: 18%;">はいった</th>
-                        <th style="width: 18%;">つかった</th>
+                        <th style="width: 18%;">入った</th>
+                        <th style="width: 18%;">使った</th>
                     </tr>
                 </thead>
                 <tbody id="ledgerBody">
@@ -359,17 +370,10 @@
             </table>
         </div>
 
-        <div class="table-controls">
-            <button class="action-btn" onclick="addRowAndSaveWithToday()">いちばん下に新しい行をたす ＋</button>
+<div class="table-controls">
+            <button class="action-btn" onclick="addRowAndSaveWithToday()">新しい行 ＋</button>
+            <button class="share-btn" id="shareBtn" onclick="shareAsImage()">共有 ✉️</button>
         </div>
-
-        <div class="money-summary-box">
-            <div class="money-label"> てもちのおかね</div>
-            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
-        </div>
-
-        <button class="share-btn" id="shareBtn" onclick="shareAsImage()">ほごしゃに共有 ✉️</button>
-    </div>
 
     <div id="imageOverlay" class="image-overlay" onclick="closeOverlay()">
         <div class="image-overlay-info">画像を長押しして「写真に保存」してね！📸</div>
