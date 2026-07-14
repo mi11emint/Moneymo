@@ -32,7 +32,37 @@
             box-sizing: border-box;
             transition: background-color 0.3s, color 0.3s;
         }
-
+/* --- 🌌 宇宙の背景エフェクト --- */
+body::before, body::after {
+content: "";
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+z-index: -1;
+pointer-events: none;
+}
+body::before {
+background-image:
+radial-gradient(1.5px 1.5px at 20% 30%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 40% 70%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 60% 20%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 15% 85%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 85% 15%, #ffffff, rgba(0,0,0,0));
+background-size: 350px 350px;
+animation: twinkleCSS 4s infinite alternate ease-in-out;
+}
+body::after {
+background-image:
+radial-gradient(1.5px 1.5px at 80% 50%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 30% 80%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 10% 40%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 90% 90%, #ffffff, rgba(0,0,0,0));
+background-size: 250px 250px;
+animation: twinkleCSS 3s infinite alternate-reverse ease-in-out;
+}
+@keyframes twinkleCSS {
+0% { opacity: 0.1; }
+100% { opacity: 1; }
+}
         .container {
             width: 100%;
             max-width: 500px; 
@@ -243,18 +273,47 @@
             box-sizing: border-box;
         }
 
-        /* てもちのおかねエリア */
+        /* 枠の外側にアニメーションさせるためのコンテナ */
         .money-summary-box {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px dashed var(--main-color);
-            border-radius: 12px;
+            position: relative;
+            background: var(--table-bg);
+            border-radius: 30px;
             padding: 14px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            /* 枠の太さ分だけ内側に余白を確保 */
+            border: 4px solid transparent;
         }
 
+        /* 枠線だけを光らせるための疑似要素 */
+        .money-summary-box::before {
+            content: "";
+            position: absolute;
+            inset: -4px; /* 枠の太さ分外側へ */
+            border-radius: 30px; /* 枠の角丸 */
+            padding: 4px; /* ここが枠の太さになる */
+            
+            /* ぐるっと一周する円形グラデーション */
+            background: conic-gradient(
+                from 0deg,
+                var(--main-color) 0%,
+                var(--main-color) var(--progress-percent, 0%),
+                #ffffff var(--progress-percent, 0%),
+                #ffffff 100%
+            );
+            
+            /* 中をくり抜いて枠線だけにするテクニック */
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) content-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            
+            pointer-events: none; /* クリックを邪魔しない */
+        }
+        
         .money-label {
             display: flex;
             align-items: center;
@@ -268,7 +327,7 @@
             font-weight: bold;
             color: var(--text-color);
             border-bottom: double var(--main-color);
-            padding: 0 4px;
+            padding: 0 6px;
         }
 
         /* 🌟 追加：iPhone用画像長押し保存オーバーレイのスタイル */
@@ -379,6 +438,150 @@
             padding: 0;
         }
         
+        /* =============================
+           🎮 ミニゲーム用スタイル（オーバーレイとして統合）
+           ===========================*/
+        #minigameOverlay {
+            display: none; /* 初期状態は非表示 */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); /* 少し暗めの背景 */
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinecaption', 'Courier New', sans-serif;
+            color: #fff;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .mg-universal-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        #mg-info {
+            font-size: 15px;
+            color: #e0ffff;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 0 20px;
+            line-height: 1.6;
+            letter-spacing: 0.05em;
+        }
+
+        #mg-menuContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 80%;
+            max-width: 280px;
+            margin-top: 10px;
+        }
+        
+        .mg-menu-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            padding: 14px 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            transition: background 0.15s, border-color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .mg-menu-row:active {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .mg-menu-text {
+            color: #fff;
+            transition: color 0.15s, text-shadow 0.15s;
+        }
+
+        .mg-menu-row[data-game="invader"]:active .mg-menu-text { color: #0fa; text-shadow: 0 0 8px rgba(0,255,170,0.4); }
+        .mg-menu-row[data-game="catch"]:active .mg-menu-text { color: #00d2ff; text-shadow: 0 0 8px rgba(0,210,255,0.4); }
+
+        #mg-gameCanvas {
+            background-color: #000;
+            display: none;
+            width: 100%;
+            max-width: min(95vw, calc(55vh * 0.8), 350px); 
+            aspect-ratio: 4 / 5;
+            height: auto;
+            flex-shrink: 0; 
+        }
+        .border-invader { border: 2px solid #555; }
+        .border-catch { border: 2px solid #223; box-shadow: 0 0 25px rgba(0,255,255,0.08); }
+
+        #mg-controlsBlock {
+            display: none;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+            padding: 0 10px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .mg-btn-move {
+            width: 45%;
+            height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #333;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 10px;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mg-btn-move:active { background-color: #555; }
+        .mg-btn-catch-style {
+            background: linear-gradient(135deg, #0f2042 0%, #061026 100%);
+            border: 2px solid #00d2ff; color: #00d2ff;
+            height: 55px; font-size: 18px; border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,210,255,0.3);
+        }
+        .mg-btn-catch-style:active { background: #00d2ff; color: #03030a; box-shadow: 0 0 20px rgba(0,210,255,0.6); }
+
+        #mg-closeBtnContainer {
+            display: block; /* メニュー画面では「やめる」ボタンとして表示 */
+            position: absolute;
+            bottom: 3vh;
+            width: 100%;
+            text-align: center;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+        #mg-closeResultBtn {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-family: 'Cinecaption', 'Courier New', sans-serif;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px solid #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+        }
+        #mg-closeResultBtn:active {
+            background: #fff;
+            color: #000;
+        }
+        
     </style>
 </head>
 <body>
@@ -390,20 +593,31 @@
                 
                 <h1>
                   <div class="money-summary-box">
-            <div class="money-label"> てもちのおかね　</div>
+            <div class="money-label"> 手持ち　</div>
             <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
         </div>
         </h1>
             </div>
             <div class="header-right">
+                <button class="icon-btn" onclick="openMiniGameMenu()">🎮</button>
                 <button class="icon-btn" onclick="goToHistoryPage()">📓</button>
                 <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
             </div>
+          
         </div>
 
         <div class="current-month-title" id="pageMonthTitle">読み込み中...</div>
 
         <div class="control-panel" id="controlPanel">
+          
+          <div class="control-title"> 💴目標設定</div>
+            <div class="control-row" style="margin-bottom: 16px;">
+                <label>目標金額</label>
+                <div>
+                    <input type="number" id="goalAmountInput" placeholder="例: 5000" style="width: 80px; text-align: right; padding: 4px; border-radius: 4px; border: 1px solid #ccc;" onchange="saveGoalAmount()"> 円
+                </div>
+            </div>
+          
             <div class="control-title">⚙️ デザイン設定</div>
             <div class="control-row" style="align-items: flex-start;">
                 <label style="margin-top: 4px;">わくいろ</label>
@@ -463,7 +677,32 @@
         <img id="generatedImage" src="" alt="お小遣い帳画像" onclick="event.stopPropagation();">
         <div class="image-overlay-close-tip">まわりの暗いところをタップすると戻るよ</div>
     </div>
+    <div id="minigameOverlay">
+        <div class="mg-universal-container">
+            <div id="mg-info">遊ぶゲームを選んでね！<br>（1回 2pt 消費）</div>
+            
+            <div id="mg-menuContainer">
+                <div class="mg-menu-row" data-game="invader" onclick="executeGameStart(0)">
+                    <span class="mg-menu-text">Sound Invader</span>
+                </div>
+                <div class="mg-menu-row" data-game="catch" onclick="executeGameStart(1)">
+                    <span class="mg-menu-text">Aqua Catch</span>
+                </div>
+            </div>
+            
+            <canvas id="mg-gameCanvas" width="400" height="500"></canvas>
+            
+            <div id="mg-controlsBlock">
+                <button id="mg-leftBtn" class="mg-btn-move">◀</button>
+                <button id="mg-rightBtn" class="mg-btn-move">▶</button>
+            </div>
+        </div>
 
+        <div id="mg-closeBtnContainer">
+            <button id="mg-closeResultBtn" onclick="closeMiniGame()">やめる</button>
+        </div>
+    </div>
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -525,6 +764,49 @@
             }
             const finalTotal = totalIncome - totalExpense;
             document.getElementById('totalMoneyDisplay').innerText = finalTotal.toLocaleString();
+        
+// 🌟 追加：計算が終わったら目標のゲージと光も更新する
+            if (typeof updateGoalProgress === 'function') {
+                updateGoalProgress();
+            }
+        }
+
+        let goalAmount = parseInt(localStorage.getItem('goalAmount') || '0');
+
+        function saveGoalAmount() {
+            const input = document.getElementById('goalAmountInput').value;
+            goalAmount = parseInt(input) || 0;
+            localStorage.setItem('goalAmount', goalAmount);
+            updateGoalProgress(); // UIを更新
+        }
+
+        function updateGoalProgress() {
+            const box = document.querySelector('.money-summary-box');
+            const totalText = document.getElementById('totalMoneyDisplay').innerText.replace(/,/g, '');
+            const currentTotal = parseInt(totalText) || 0;
+
+            let percentage = 0;
+            if (goalAmount > 0) {
+                percentage = Math.min((currentTotal / goalAmount) * 100, 100);
+            }
+
+            // パーセンテージをCSS変数にセット
+            box.style.setProperty('--progress-percent', `${percentage}%`);
+
+            // 枠線にグロー（光）を適用する
+            if (percentage > 0) {
+                const glowStrength = (percentage / 100) * 15;
+                box.style.setProperty('box-shadow', `0 0 ${glowStrength}px var(--main-color)`);
+            } else {
+                box.style.removeProperty('box-shadow');
+            }
+
+            // 100%の時のピカピカ演出
+            if (percentage >= 100) {
+                box.classList.add('goal-achieved');
+            } else {
+                box.classList.remove('goal-achieved');
+            }
         }
 
         const colorPicker = new iro.ColorPicker("#picker", {
@@ -985,12 +1267,430 @@ let updatingIndex = -1; // -1なら新規追加、それ以外は上書きする
             document.body.addEventListener('mouseup', handlePressEnd);
         }
 
+// ====================================
+// 🎮 ミニゲームのロジック（ポイント連動版）
+// ===============================
+        
+        let mgAudioContext = null;
+        let mgAnalyser = null;
+        let mgDataArray = null;
+        let mgAudioStream = null;
+
+        // メニューを開く
+        function openMiniGameMenu() {
+            document.getElementById('minigameOverlay').style.display = 'flex';
+            document.getElementById('mg-menuContainer').style.display = 'flex';
+            document.getElementById('mg-gameCanvas').style.display = 'none';
+            document.getElementById('mg-controlsBlock').style.display = 'none';
+            document.getElementById('mg-info').innerHTML = "遊ぶゲームを選んでね！<br>（1回 2pt 消費）";
+            document.getElementById('mg-closeResultBtn').innerText = "やめる";
+            document.getElementById('mg-closeBtnContainer').style.display = 'block';
+        }
+
+        // メニュー（または結果画面）を閉じる
+        function closeMiniGame() {
+            document.getElementById('minigameOverlay').style.display = 'none';
+            if (mgAudioStream) mgAudioStream.getTracks().forEach(track => track.stop());
+            if (mgAudioContext && mgAudioContext.state !== 'closed') mgAudioContext.close();
+            mgAudioStream = null;
+            mgAudioContext = null;
+        }
+
+        // ゲーム開始前のポイント判定
+        function executeGameStart(index) {
+            if (userPoints < 2) {
+                alert("ポイントが足りないよ！💦\n（ミニゲームで遊ぶには 2pt 必要です）");
+                return;
+            }
+
+            const confirmPlay = confirm("2pt 消費してゲームを開始しますか？");
+            if (!confirmPlay) return;
+
+            // 💰 ポイント消費の処理
+            userPoints -= 2;
+            localStorage.setItem('userPoints', userPoints);
+            updatePointDisplay(); // 設定画面のポイント表示も更新
+
+            // UIの切り替え
+            document.getElementById('mg-menuContainer').style.display = 'none';
+            document.getElementById('mg-closeBtnContainer').style.display = 'none'; // ゲーム中は閉じるボタンを隠す
+            
+            if (index === 0) runInvaderGame();
+            else if (index === 1) runCatchGame();
+        }
+
+        // ===============================
+        // 👾 1. SOUND INVADER
+        // ===============================
+        function runInvaderGame() {
+            const gameCanvas = document.getElementById('mg-gameCanvas');
+            const info = document.getElementById('mg-info');
+            const controlsBlock = document.getElementById('mg-controlsBlock');
+            const leftBtn = document.getElementById('mg-leftBtn');
+            const rightBtn = document.getElementById('mg-rightBtn');
+
+            info.innerHTML = "👾をやっつけて！<br>ロングトーンでビーム発射！";
+            gameCanvas.style.display = "block";
+            gameCanvas.className = "border-invader";
+            controlsBlock.style.display = "flex";
+
+            leftBtn.className = "mg-btn-move"; rightBtn.className = "mg-btn-move";
+            leftBtn.innerText = "◀"; rightBtn.innerText = "▶";
+
+            const ctx = gameCanvas.getContext('2d');
+            let isPlaying = false, isGameOver = false, isCountingDown = false, countdownNumber = 3;
+            let score = 0, timeLeft = 30, timerInterval;
+            let bullets = [], invaders = [], boss = null; 
+
+            let player = { x: gameCanvas.width / 2, y: gameCanvas.height - 40, speed: 9 };
+            let moveLeft = false, moveRight = false;
+            let voiceDuration = 0, isBeaming = false, invaderSpawnTimer = 0, hasBossSpawned = false;
+
+            const setBtnEvent = (btn, startFlag, endFlag) => {
+                btn.onmousedown = (e) => { e.preventDefault(); startFlag(); };
+                btn.onmouseup = (e) => { e.preventDefault(); endFlag(); };
+                btn.onmouseleave = (e) => { e.preventDefault(); endFlag(); };
+                btn.ontouchstart = (e) => { e.preventDefault(); startFlag(); };
+                btn.ontouchend = (e) => { e.preventDefault(); endFlag(); };
+            };
+            setBtnEvent(leftBtn, () => moveLeft = true, () => moveLeft = false);
+            setBtnEvent(rightBtn, () => moveRight = true, () => moveRight = false);
+
+            startCountdown();
+            initAudio();
+
+            async function initAudio() {
+                try {
+                    mgAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mgAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    if (mgAudioContext.state === 'suspended') await mgAudioContext.resume();
+                    const source = mgAudioContext.createMediaStreamSource(mgAudioStream);
+                    mgAnalyser = mgAudioContext.createAnalyser(); mgAnalyser.fftSize = 256;
+                    source.connect(mgAnalyser); mgDataArray = new Uint8Array(mgAnalyser.frequencyBinCount);
+                } catch (err) { console.log("マイク許可なし", err); }
+            }
+
+            function startCountdown() {
+                isCountingDown = true; countdownNumber = 3;
+                const cdInterval = setInterval(() => {
+                    countdownNumber--;
+                    if (countdownNumber < 0) { clearInterval(cdInterval); isCountingDown = false; startGame(); }
+                }, 1000);
+
+                function countdownLoop() {
+                    if (!isCountingDown) return;
+                    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                    ctx.fillStyle = '#555'; ctx.fillRect(player.x - 20, player.y, 40, 15); ctx.fillRect(player.x - 5, player.y - 8, 10, 8);
+                    ctx.fillStyle = '#0fa'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 70px sans-serif';
+                    if (countdownNumber > 0) { ctx.fillText(countdownNumber, gameCanvas.width / 2, gameCanvas.height / 2); }
+                    else { ctx.fillStyle = '#f0f'; ctx.fillText('START!', gameCanvas.width / 2, gameCanvas.height / 2); }
+                    requestAnimationFrame(countdownLoop);
+                }
+                countdownLoop();
+            }
+
+            function startGame() {
+                isPlaying = true;
+                timerInterval = setInterval(() => { timeLeft--; if (timeLeft <= 0) endGame(); }, 1000);
+                gameLoop();
+            }
+
+            function gameLoop() {
+                if (!isPlaying) return;
+                updateAudio(); updateGame(); checkCollisions(); drawGame();
+                if (!isGameOver) requestAnimationFrame(gameLoop);
+            }
+
+            function updateAudio() {
+                if (!mgAnalyser) return;
+                mgAnalyser.getByteFrequencyData(mgDataArray);
+                let total = 0; for (let i = 0; i < mgDataArray.length; i++) total += mgDataArray[i];
+                let volume = total / mgDataArray.length;
+                if (volume > 15) {
+                    voiceDuration++; if (voiceDuration > 15) isBeaming = true;
+                    if (isBeaming) { bullets.push({ x: player.x, y: player.y - 10, width: Math.min(volume * 0.6, 50), height: 25, speed: 15, color: '#f0f', isBeam: true }); } 
+                    else { if (voiceDuration % 3 === 1) bullets.push({ x: player.x, y: player.y - 10, radius: Math.min(volume * 0.4, 30), speed: 9, color: '#0fa', isBeam: false }); }
+                } else { voiceDuration = 0; isBeaming = false; }
+            }
+
+            function updateGame() {
+                if (moveLeft) player.x -= player.speed; if (moveRight) player.x += player.speed;
+                if (player.x < 20) player.x = 20; if (player.x > gameCanvas.width - 20) player.x = gameCanvas.width - 20;
+                for (let i = bullets.length - 1; i >= 0; i--) { bullets[i].y -= bullets[i].speed; if (bullets[i].y < -50) bullets.splice(i, 1); }
+                invaderSpawnTimer++;
+                let spawnInterval = 12;
+                if (timeLeft > 20) spawnInterval = 48; else if (timeLeft <= 15) spawnInterval = 2;
+                if (invaderSpawnTimer >= spawnInterval) {
+                    let invaderSpeed = 1.5 + Math.random() * 2.0;
+                    if (timeLeft > 20) invaderSpeed = 0.6 + Math.random() * 0.6; else if (timeLeft <= 15) invaderSpeed = 2.0 + Math.random() * 2.5;
+                    invaders.push({ x: Math.random() * (gameCanvas.width - 50) + 25, y: -20, size: 22, speed: invaderSpeed });
+                    invaderSpawnTimer = 0;
+                }
+                if (timeLeft <= 15 && !hasBossSpawned) { boss = { x: gameCanvas.width / 2, y: -50, size: 85, speed: 0.35, hp: 2000, maxHp: 2000 }; hasBossSpawned = true; }
+                if (boss) { boss.y += boss.speed; if (boss.y > gameCanvas.height + 50) boss.y = -50; }
+                for (let i = invaders.length - 1; i >= 0; i--) { invaders[i].y += invaders[i].speed; if (invaders[i].y > gameCanvas.height + 20) invaders.splice(i, 1); }
+            }
+
+            function checkCollisions() {
+                for (let b = bullets.length - 1; b >= 0; b--) {
+                    let bullet = bullets[b]; if (!bullet) continue;
+                    if (boss) {
+                        let dx = bullet.x - boss.x, dy = bullet.y - boss.y, dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < (bullet.radius || bullet.width/2) + boss.size/2.5) {
+                            boss.hp -= bullet.isBeam ? 3 : 1; score += 20;
+                            if (boss.hp <= 0) { boss = null; score += 20000; }
+                            if (!bullet.isBeam) { bullets.splice(b, 1); continue; }
+                        }
+                    }
+                    for (let i = invaders.length - 1; i >= 0; i--) {
+                        let invader = invaders[i]; if (!bullet || !invader) continue;
+                        let hit = false;
+                        if (bullet.isBeam) {
+                            let closeX = Math.max(bullet.x - bullet.width/2, Math.min(invader.x, bullet.x + bullet.width/2));
+                            let closeY = Math.max(bullet.y, Math.min(invader.y, bullet.y + bullet.height));
+                            if ((invader.x - closeX)**2 + (invader.y - closeY)**2 < invader.size**2) hit = true;
+                        } else { if (Math.sqrt((bullet.x - invader.x)**2 + (bullet.y - invader.y)**2) < (bullet.radius + invader.size)) hit = true; }
+                        if (hit) { invaders.splice(i, 1); score += 100; if (!bullet.isBeam) { bullets.splice(b, 1); break; } }
+                    }
+                }
+            }
+
+            function drawGame() {
+                ctx.fillStyle = '#000'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                ctx.fillStyle = '#fff'; ctx.fillRect(player.x - 20, player.y, 40, 15); ctx.fillRect(player.x - 5, player.y - 8, 10, 8);
+                bullets.forEach(b => { ctx.fillStyle = b.color; if (!b.isBeam) { ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill(); } else { ctx.fillRect(b.x - b.width / 2, b.y, b.width, b.height); } });
+                if (boss) {
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${boss.size}px sans-serif`; ctx.fillText('👾', boss.x, boss.y);
+                    ctx.font = `${boss.size * 0.55}px sans-serif`; ctx.fillText('👑', boss.x, boss.y - boss.size * 0.45);
+                    let barWidth = 120, barHeight = 10; ctx.fillStyle = '#444'; ctx.fillRect(boss.x - barWidth/2, boss.y - boss.size/2 - 25, barWidth, barHeight);
+                    ctx.fillStyle = '#0fa'; ctx.fillRect(boss.x - barWidth/2, boss.y - boss.size/2 - 25, barWidth * (Math.max(0, boss.hp) / boss.maxHp), barHeight);
+                }
+                invaders.forEach(inv => { ctx.font = `${inv.size * 1.3}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('👾', inv.x, inv.y); });
+                ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`SCORE: ${score}`, 15, 30);
+                if (timeLeft <= 15) ctx.fillStyle = '#ff3333';
+                ctx.textAlign = 'right'; ctx.fillText(`TIME: ${timeLeft}s`, gameCanvas.width - 15, 30);
+                if (isGameOver) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '24px sans-serif'; ctx.fillText('ゲーム終了！', gameCanvas.width / 2, gameCanvas.height / 2 - 40);
+                    ctx.fillStyle = '#0fa'; ctx.font = '22px sans-serif'; ctx.fillText(`最終スコア: ${score}`, gameCanvas.width / 2, gameCanvas.height / 2 + 10);
+                }
+            }
+
+            function endGame() {
+                isGameOver = true; clearInterval(timerInterval); drawGame();
+                if (mgAudioStream) mgAudioStream.getTracks().forEach(track => track.stop());
+                if (mgAudioContext && mgAudioContext.state !== 'closed') mgAudioContext.close();
+                setTimeout(() => { 
+                    document.getElementById('mg-closeResultBtn').innerText = "結果を閉じて戻る";
+                    document.getElementById('mg-closeBtnContainer').style.display = 'block'; 
+                }, 800);
+            }
+        }
+
+        // ================================
+        // 💧 2. AQUA CATCH
+        // ================================
+        function runCatchGame() {
+            const gameCanvas = document.getElementById('mg-gameCanvas');
+            const info = document.getElementById('mg-info');
+            const controlsBlock = document.getElementById('mg-controlsBlock');
+            const leftBtn = document.getElementById('mg-leftBtn');
+            const rightBtn = document.getElementById('mg-rightBtn');
+
+            info.innerHTML = "左右ボタンで水滴をキャッチ！";
+            gameCanvas.style.display = "block";
+            gameCanvas.className = "border-catch";
+            controlsBlock.style.display = "flex";
+
+            leftBtn.className = "mg-btn-move mg-btn-catch-style"; rightBtn.className = "mg-btn-move mg-btn-catch-style";
+            leftBtn.innerText = "◀"; rightBtn.innerText = "▶";
+
+            const ctx = gameCanvas.getContext('2d');
+            const soundGreat = new Audio('./water-great.mp3');
+            const soundGood = new Audio('./water-good.mp3');
+
+            let isPlaying = false, isGameOver = false, isCountingDown = false, countdownNumber = 3;
+            let score = 0, combo = 0, timeLeft = 30, timerInterval;
+
+            const spawnY = 60, judgeLowY = gameCanvas.height - 60, targetRadius = 32;
+            const lanes = [100, 200, 300]; let currentLaneIndex = 1;
+            let notes = [], nextSpawnCountdown = 0, splashEffects = [], fireworks = [];
+
+            function playWaterSound(isGreat) {
+                try {
+                    if (isGreat) soundGreat.cloneNode().play().catch(e => console.log(e));
+                    else soundGood.cloneNode().play().catch(e => console.log(e));
+                } catch (e) { console.log("Audio Error:", e); }
+            }
+
+            const moveLeft = () => { if (!isPlaying || isGameOver || isCountingDown) return; if (currentLaneIndex > 0) { currentLaneIndex--; checkImmediateCatch(); } };
+            const moveRight = () => { if (!isPlaying || isGameOver || isCountingDown) return; if (currentLaneIndex < 2) { currentLaneIndex++; checkImmediateCatch(); } };
+
+            leftBtn.onmousedown = (e) => { e.preventDefault(); moveLeft(); }; 
+            leftBtn.ontouchstart = (e) => { e.preventDefault(); moveLeft(); };
+            rightBtn.onmousedown = (e) => { e.preventDefault(); moveRight(); }; 
+            rightBtn.ontouchstart = (e) => { e.preventDefault(); moveRight(); };
+
+            window.addEventListener('keydown', (e) => {
+                if (gameCanvas.className === "border-catch" && isPlaying) {
+                    if (e.key === "ArrowLeft") moveLeft();
+                    if (e.key === "ArrowRight") moveRight();
+                }
+            });
+
+            startCountdown();
+
+            function startCountdown() {
+                isCountingDown = true; countdownNumber = 3;
+                const cdInterval = setInterval(() => {
+                    countdownNumber--;
+                    if (countdownNumber < 0) { clearInterval(cdInterval); isCountingDown = false; startGame(); }
+                }, 1000);
+
+                function countdownLoop() {
+                    if (!isCountingDown) return;
+                    ctx.fillStyle = '#020206'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                    lanes.forEach((laneX, idx) => {
+                        ctx.strokeStyle = '#101025'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(laneX, spawnY); ctx.lineTo(laneX, judgeLowY); ctx.stroke();
+                        ctx.strokeStyle = (idx === currentLaneIndex) ? 'rgba(0, 210, 255, 0.6)' : 'rgba(0, 150, 255, 0.1)';
+                        ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(laneX, judgeLowY, targetRadius, 0, Math.PI * 2); ctx.stroke();
+                    });
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 70px sans-serif';
+                    if (countdownNumber > 0) { ctx.fillStyle = '#00ffff'; ctx.shadowBlur = 20; ctx.shadowColor = '#00ffff'; ctx.fillText(countdownNumber, gameCanvas.width / 2, gameCanvas.height / 2); }
+                    else { ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 25; ctx.shadowColor = '#ffffff'; ctx.fillText('START!', gameCanvas.width / 2, gameCanvas.height / 2); }
+                    ctx.shadowBlur = 0; requestAnimationFrame(countdownLoop);
+                }
+                countdownLoop();
+            }
+
+            function startGame() {
+                isPlaying = true; nextSpawnCountdown = 20;
+                timerInterval = setInterval(() => { timeLeft--; if (timeLeft <= 0) endGame(); }, 1000);
+                gameLoop();
+            }
+
+            function gameLoop() {
+                if (!isPlaying) return;
+                updateGame(); drawGame();
+                if (!isGameOver) requestAnimationFrame(gameLoop);
+            }
+
+            function updateGame() {
+                nextSpawnCountdown--;
+                if (nextSpawnCountdown <= 0) {
+                    notes.push({ lane: Math.floor(Math.random() * 3), progress: 0, speed: 0.012 + Math.random() * 0.006 });
+                    nextSpawnCountdown = Math.floor(Math.random() * 25) + 20;
+                }
+                for (let i = notes.length - 1; i >= 0; i--) {
+                    notes[i].progress += notes[i].speed;
+                    if (notes[i].lane === currentLaneIndex && notes[i].progress >= 0.96 && notes[i].progress <= 1.04) { checkJudgment(currentLaneIndex); continue; }
+                    if (notes[i].progress > 1.12) { notes.splice(i, 1); combo = 0; }
+                }
+                for (let i = splashEffects.length - 1; i >= 0; i--) {
+                    let fx = splashEffects[i]; fx.radius1 += 2.2; fx.radius2 += 1.6; fx.dropY -= 1.8; fx.alpha -= 0.04; if (fx.alpha <= 0) splashEffects.splice(i, 1);
+                }
+                for (let i = fireworks.length - 1; i >= 0; i--) {
+                    let fw = fireworks[i]; fw.delay--;
+                    if (fw.delay <= 0) { fw.state = "explode"; fw.alpha -= 0.016; fw.radius += fw.expandSpeed; fw.expandSpeed *= 0.94; }
+                    if (fw.alpha <= 0) fireworks.splice(i, 1);
+                }
+            }
+
+            function checkImmediateCatch() { checkJudgment(currentLaneIndex); }
+
+            function checkJudgment(activeLane) {
+                let targetIndex = -1, maxProgress = -1;
+                for(let i=0; i<notes.length; i++) { if(notes[i].lane === activeLane && notes[i].progress > maxProgress) { maxProgress = notes[i].progress; targetIndex = i; } }
+                if (targetIndex === -1) return;
+                let note = notes[targetIndex], diff = Math.abs(note.progress - 1.0), currentX = lanes[note.lane], currentY = judgeLowY;
+                
+                if (diff < 0.06) {
+                    playWaterSound(true);
+                    generateSplash(currentX, currentY);
+                    score += 150; combo++; notes.splice(targetIndex, 1);
+                } else if (diff < 0.13) {
+                    playWaterSound(false);
+                    generateSplash(currentX, currentY);
+                    score += 80; combo++; notes.splice(targetIndex, 1);
+                }
+
+                if (combo >= 5) { triggerFireworkShow(currentX, currentY); combo = 0; }
+            }
+
+            function generateSplash(x, y) { splashEffects.push({ x: x, y: y, radius1: 5, radius2: 2, dropY: y - 5, color: "#ffffff", colorCyan: "#00f0ff", alpha: 1.0 }); }
+
+            function triggerFireworkShow(originX, originY) {
+                const pastelColors = ["#ffffff", "#ffb7d5", "#b2ebf2", "#fff59d", "#e0ffff", "#e1bee7"];
+                for (let i = 0; i < 5; i++) {
+                    let fireworkX = originX + (Math.random() * 120 - 60), fireworkY = originY - Math.random() * 140 - 40;
+                    if(fireworkX < 30) fireworkX = 30; if(fireworkX > gameCanvas.width - 30) fireworkX = gameCanvas.width - 30;
+                    fireworks.push({ x: fireworkX, y: fireworkY, radius: 3, maxRadius: Math.random() * 5 + 37, expandSpeed: 2.5 + Math.random() * 1.0, color: pastelColors[Math.floor(Math.random() * pastelColors.length)], alpha: 1.0, delay: i * 5, state: "wait" });
+                }
+                score += 1000;
+            }
+
+            function drawGame() {
+                ctx.fillStyle = '#020206'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                lanes.forEach((laneX, idx) => {
+                    ctx.strokeStyle = '#101025'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(laneX, spawnY); ctx.lineTo(laneX, judgeLowY); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(20, 20, 45, 0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, judgeLowY); ctx.lineTo(gameCanvas.width, judgeLowY); ctx.stroke();
+                });
+                let playerX = lanes[currentLaneIndex];
+                ctx.save(); ctx.shadowBlur = 20; ctx.shadowColor = "#00d2ff"; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(playerX, judgeLowY, 18, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(playerX, judgeLowY, 8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+                splashEffects.forEach(fx => {
+                    ctx.save(); ctx.globalAlpha = fx.alpha; ctx.strokeStyle = fx.colorCyan; ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = fx.colorCyan; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius1, 0, Math.PI * 2); ctx.stroke();
+                    ctx.strokeStyle = fx.color; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius2, 0, Math.PI * 2); ctx.stroke();
+                    ctx.fillStyle = "#ffffff"; ctx.shadowColor = "#ffffff"; ctx.beginPath(); ctx.arc(fx.x, fx.dropY, 4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                });
+                fireworks.forEach(fw => {
+                    if (fw.state === "explode") {
+                        ctx.save(); ctx.globalAlpha = fw.alpha; ctx.shadowBlur = fw.radius * 2.2; ctx.shadowColor = fw.color; ctx.strokeStyle = fw.color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(fw.x, fw.y, fw.radius, 0, Math.PI * 2); ctx.stroke();
+                        ctx.shadowBlur = 15; ctx.lineWidth = 1.5; ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.arc(fw.x, fw.y, fw.radius * 0.9, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(fw.x, fw.y, fw.radius * 0.15, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    }
+                });
+                notes.forEach(note => {
+                    let currentX = lanes[note.lane], currentY = spawnY + (judgeLowY - spawnY) * note.progress, currentRadius = 4 + (12 * note.progress);
+                    ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = "#0099ff";
+                    let gradient = ctx.createRadialGradient(currentX, currentY, 1, currentX, currentY, currentRadius);
+                    gradient.addColorStop(0, '#ffffff'); gradient.addColorStop(0.6, '#dbf0ff'); gradient.addColorStop(1, "#0077ff");
+                    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(currentX, currentY, currentRadius, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                });
+                ctx.save(); ctx.strokeStyle = "#151525"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(gameCanvas.width - 40, 75, 15, 0, Math.PI * 2); ctx.stroke();
+                if (combo > 0) { ctx.shadowBlur = 10; ctx.shadowColor = "#ffffff"; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4; let progressAngle = (combo / 5) * Math.PI * 2; ctx.beginPath(); ctx.arc(gameCanvas.width - 40, 75, 15, -Math.PI / 2, (-Math.PI / 2) + progressAngle); ctx.stroke(); }
+                ctx.restore();
+
+                ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`SCORE: ${score}`, 20, 40);
+                ctx.textAlign = 'right'; ctx.fillText(`TIME: ${timeLeft}s`, gameCanvas.width - 20, 40);
+
+                if (isGameOver) {
+                    ctx.fillStyle = 'rgba(1, 1, 5, 0.93)'; ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '24px sans-serif'; ctx.fillText('タイムアップ！', gameCanvas.width / 2, gameCanvas.height / 2 - 40);
+                    ctx.fillStyle = '#00ffff'; ctx.font = 'bold 26px sans-serif'; ctx.fillText(`最終スコア: ${score}`, gameCanvas.width / 2, gameCanvas.height / 2 + 10);
+                }
+            }
+
+            function endGame() {
+                isGameOver = true; clearInterval(timerInterval); drawGame();
+                setTimeout(() => { 
+                    document.getElementById('mg-closeResultBtn').innerText = "結果を閉じて戻る";
+                    document.getElementById('mg-closeBtnContainer').style.display = 'block'; 
+                }, 800);
+            }
+        }
+
+
+
         // ---------------------------------
         // 既存の initApp() 関数の中に initPetFeatures() を追加します
         // ---------------------------------
         function initApp() {
             loadDesignSettings();
             document.getElementById('pageMonthTitle').innerText = `${currentYear}年 ${currentMonth}月` ;
+            // 🌟 追加：保存された目標金額を入力欄にセット
+            document.getElementById('goalAmountInput').value = goalAmount > 0 ? goalAmount : "";
             
             const tbody = document.getElementById('ledgerBody');
             tbody.innerHTML = "";
