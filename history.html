@@ -29,7 +29,37 @@
             min-height: 100vh;
             box-sizing: border-box;
         }
-
+/* --- 🌌 宇宙の背景エフェクト --- */
+body::before, body::after {
+content: "";
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+z-index: -1;
+pointer-events: none;
+}
+body::before {
+background-image:
+radial-gradient(1.5px 1.5px at 20% 30%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 40% 70%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 60% 20%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 15% 85%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 85% 15%, #ffffff, rgba(0,0,0,0));
+background-size: 350px 350px;
+animation: twinkleCSS 4s infinite alternate ease-in-out;
+}
+body::after {
+background-image:
+radial-gradient(1.5px 1.5px at 80% 50%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(2px 2px at 30% 80%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 10% 40%, #ffffff, rgba(0,0,0,0)),
+radial-gradient(1.5px 1.5px at 90% 90%, #ffffff, rgba(0,0,0,0));
+background-size: 250px 250px;
+animation: twinkleCSS 3s infinite alternate-reverse ease-in-out;
+}
+@keyframes twinkleCSS {
+0% { opacity: 0.1; }
+100% { opacity: 1; }
+}
         .container {
             width: 100%;
             max-width: 500px; 
@@ -124,7 +154,12 @@
     <div class="container" id="ledgerContainer">
         
         <div class="header-row">
-            <h1>📓 かこのきろく</h1>
+            <h1>
+              <div class="money-summary-box">
+            <div class="money-label">この月の残り </div>
+            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
+        </div>
+        </h1>
             <button class="back-btn" onclick="goToMainPage()">もどる ↩</button>
         </div>
 
@@ -154,10 +189,7 @@
             <button class="action-btn" onclick="addRowAndSave()">行をたす</button>
         </div>
 
-        <div class="money-summary-box">
-            <div class="money-label">その月の のこり</div>
-            <div class="temochi-display"><span id="totalMoneyDisplay">0</span> 円</div>
-        </div>
+        
 
         <button class="share-btn" onclick="shareAsImage()">この月を画像でほぞん 📷</button>
     </div>
